@@ -11,6 +11,7 @@ window.BBEngine=(()=>{
  function call(request){ensure();const id=++serial;return new Promise((resolve,reject)=>{const timer=setTimeout(()=>abort('انتهت مهلة تشغيل المحرك.'),60000);requests.set(id,{resolve,reject,timer});worker.postMessage({id,request});});}
  const labels={200:'OK',201:'Created',207:'Multi-Status',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',405:'Method Not Allowed',415:'Unsupported Media Type',422:'Unprocessable Content',429:'Too Many Requests'};
  async function transport(path,options={}){
+  const url=new URL(path,document.baseURI);if(url.origin===location.origin&&url.pathname.startsWith('/studio/'))return nativeFetch(path,options);
   if(path==='/rooms/session')return new Response('{"local":true}',{headers:{'Content-Type':'application/json'}});
   if(path==='/academy/catalog'){const results=await Promise.all(['academy_catalog.json','resource_catalog.json','advanced_catalog.json'].map(file=>nativeFetch(new URL('./engine/'+file,document.baseURI)).then(r=>{if(!r.ok)throw Error('Content could not load');return r.json();})));return new Response(JSON.stringify({cases:results.flat()}),{headers:{'Content-Type':'application/json'}});}
   if(!String(path).startsWith('/academy/'))throw Error('Only local Academy routes are supported');

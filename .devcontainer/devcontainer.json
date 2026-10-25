@@ -1,0 +1,25 @@
+{
+  "name": "Between Bytes private browser labs",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "forwardPorts": [
+    4173,
+    4174
+  ],
+  "portsAttributes": {
+    "4173": {
+      "label": "Academy private lab",
+      "onAutoForward": "openBrowser"
+    },
+    "4174": {
+      "label": "Learner page origin",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "npm ci --ignore-scripts --no-audit --no-fund && npm run prepare:practice",
+  "postStartCommand": "BB_BIND=0.0.0.0 python server_labs/server.py > /tmp/between-bytes-private-lab.log 2>&1 &"
+}

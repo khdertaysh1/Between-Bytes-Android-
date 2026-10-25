@@ -111,7 +111,7 @@ async function send(){
   if(current.group==='payment'){const data=await readback(mode);if(ticket!==sequence)return;if(data)checkoutSummary(data,body);}
   else {summary(result);if(body.error)$('result-summary').prepend(node('p',body.error.code+' · '+body.error.message,'business-error'));}
   if(result.preview){
-   preview={ticket,token:result.token,mode,input:JSON.stringify(input),executed:false,rendered:false};const html=await window.BBEngine.preview(result.token);if(ticket!==sequence)return;$('preview').srcdoc=html;$('preview').hidden=false;$('browser-evidence').textContent=t('previewWait');
+   preview={ticket,token:result.token,mode,input:JSON.stringify(input),executed:false,rendered:false};const html=await window.BBEngine.preview(result.token);if(ticket!==sequence)return;BBStudio.documentSource(html);$('preview').srcdoc=html;$('preview').hidden=false;$('browser-evidence').textContent=t('previewWait');
   }else{checks=result.checks;$('flag').textContent=result.flag||'';showChecks();}
  }catch(e){if(ticket===sequence)$('error').textContent=e.message;}finally{setBusy(false);}
 }

@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {JSDOM} from 'jsdom';
+const source=n=>readFile(new URL('../web/'+n,import.meta.url),'utf8');
+const cases=(await Promise.all(['academy_catalog.json','resource_catalog.json','advanced_catalog.json'].map(n=>source('engine/'+n).then(JSON.parse)))).flat();
+const dom=new JSDOM('',{runScripts:'outside-only',url:'https://academy.test/'});dom.window.eval(await source('lab-tools.js'));const tools=dom.window.BBLabTools;
+const quote=s=>"'"+s.replaceAll("'","'\\''")+"'";
+test('all 108 cases select a task-specific tool profile rather than a universal code editor',()=>{const types=new Set();for(const c of cases){const p=tools.profile(c);assert.ok(p.title[0]&&p.task[0],c.id);types.add(p.type);}assert.ok(types.size>=10);assert.equal(tools.profile(cases.find(c=>c.id==='code-sqli')).type,'sql');assert.equal(tools.profile(cases.find(c=>c.id==='xss-stored')).type,'browser');assert.equal(tools.profile(cases.find(c=>c.id==='jwt-none')).type,'jwt');assert.equal(tools.profile(cases.find(c=>c.id==='traversal-relative')).type,'terminal');});
+test('curl parses quoted JSON and apostrophes for every shipped request, without shell expansion',()=>{for(const c of cases){for(const input of [c.normal,c.attack]){const command='curl -i -X POST https://northstar.test/academy/api/'+c.group+'/'+c.id+'/fixed --json '+quote(JSON.stringify(input));const r=tools.parseCurl(command,c,'vulnerable',{});assert.equal(JSON.stringify(r.input),JSON.stringify(input),c.id);assert.equal(r.mode,'fixed');}}});
+test('terminal rejects outside hosts, other case routes, unsupported methods and flags',()=>{const c=cases.find(c=>c.id==='traversal-relative');const base='/academy/api/traversal/traversal-relative/fixed';for(const cmd of ['curl https://outside.test'+base+' --json {}','curl /academy/api/payment/pay-price/fixed --json {}','curl -X DELETE '+base+' --json {}','curl '+base+' --output file --json {}','curl '+base+' --json \'unterminated'])assert.throws(()=>tools.parseCurl(cmd,c,'fixed',{}));const r=tools.parseCurl('curl '+base+' --data @request.json',c,'fixed',{path:'guide.txt'});assert.equal(r.input.path,'guide.txt');});

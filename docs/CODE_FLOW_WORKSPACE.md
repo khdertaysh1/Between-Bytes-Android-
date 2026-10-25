@@ -1,8 +1,8 @@
 # Code and flow workspace — web v0.7
 
-The current learning surface opens inside every lab. The old v0.1 learning dashboard is removed; its URL redirects to the current labs. No engine status banner is mounted at the top of the page.
+The source/trace surface is optional inside every lab; the initial surface is selected by the task profile (browser, request workbench, terminal, query worksheet, JWT editor or origin model). The old v0.1 learning dashboard is removed; its URL redirects to the current labs. No engine status banner is mounted at the top of the page.
 
-## What learners can do
+## Optional code and source inspection
 
 1. Read the case-specific vulnerable/fixed teaching snippets and the trust-boundary explanation.
 2. Write real Python against `request`, use conditions/functions/print, run it, and inspect line events and local values.
