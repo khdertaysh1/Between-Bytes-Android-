@@ -1,1 +1,1 @@
-{"name":"between-bytes-academy","private":true,"type":"module","scripts":{"prepare:practice":"node tools/prepare_practice.mjs","test:wasm":"node --test tests/engine_wasm.test.mjs"},"dependencies":{"pyodide":"314.0.7"}}
+{"name":"between-bytes-academy","private":true,"type":"module","scripts":{"prepare:practice":"node tools/prepare_practice.mjs","test:wasm":"node --test tests/engine_wasm.test.mjs tests/offline_cache.test.mjs"},"dependencies":{"pyodide":"314.0.7"}}

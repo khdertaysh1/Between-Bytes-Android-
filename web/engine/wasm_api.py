@@ -13,7 +13,7 @@ def dispatch(request):
  try:
   url=urlsplit(request['path']);path=url.path;method=request.get('method','GET');query=parse_qs(url.query)
   if path=='/rooms/session':return reply(200,{'local':True})
-  if path=='/academy/catalog':return reply(200,{'version':'0.2.0','cases':CATALOG})
+  if path=='/academy/catalog':return reply(200,{'version':'0.3.0','cases':CATALOG})
   if path=='/academy/reset':
    case=request.get('fields',{}).get('case')
    if case not in CASES:raise ValueError('Unknown case')
@@ -54,5 +54,6 @@ def preview(token):
 
 def invoke(raw):
  request=json.loads(raw)
+ if request.get('action')=='health':return json.dumps({'ready':True,'cases':len(CATALOG)})
  if request.get('action')=='preview':return json.dumps({'html':preview(request['token'])})
  return json.dumps(dispatch(request),ensure_ascii=False)

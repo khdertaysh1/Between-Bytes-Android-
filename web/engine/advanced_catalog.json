@@ -1,0 +1,622 @@
+[
+  {
+    "id": "jwt-none",
+    "group": "jwt",
+    "title": {
+      "ar": "قبول خوارزمية none",
+      "en": "Unsigned algorithm"
+    },
+    "normal": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+    },
+    "attack": {
+      "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ."
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "الخدمة تتجاوز قاعدة algorithm عند قراءة JWT.",
+      "en": "The service skips the algorithm rule when reading a JWT."
+    },
+    "fix": {
+      "ar": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+      "en": "Enforce signature, algorithm, expiry, issuer, audience and purpose. This key is public and for training only."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة algorithm عند قراءة JWT.",
+        "en": "You are testing a local Northstar service. The service skips the algorithm rule when reading a JWT."
+      },
+      "interpretation": {
+        "ar": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+        "en": "Inspect checks_trace: does a failed rule coexist with authorized=true? The fix returns 401 and withholds private_profile. A valid control remains accepted. HMAC is real; the exercise clock is fixed."
+      },
+      "bad_code": "claims = decode_without_enforcing_algorithm(token)",
+      "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "jwt-signature",
+    "group": "jwt",
+    "title": {
+      "ar": "قراءة رمز بلا تحقق توقيع",
+      "en": "Skipped signature verification"
+    },
+    "normal": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+    },
+    "attack": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.invalid-signature"
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "الخدمة تتجاوز قاعدة signature عند قراءة JWT.",
+      "en": "The service skips the signature rule when reading a JWT."
+    },
+    "fix": {
+      "ar": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+      "en": "Enforce signature, algorithm, expiry, issuer, audience and purpose. This key is public and for training only."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة signature عند قراءة JWT.",
+        "en": "You are testing a local Northstar service. The service skips the signature rule when reading a JWT."
+      },
+      "interpretation": {
+        "ar": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+        "en": "Inspect checks_trace: does a failed rule coexist with authorized=true? The fix returns 401 and withholds private_profile. A valid control remains accepted. HMAC is real; the exercise clock is fixed."
+      },
+      "bad_code": "claims = decode_without_enforcing_signature(token)",
+      "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "jwt-expiry",
+    "group": "jwt",
+    "title": {
+      "ar": "رمز منتهي الصلاحية",
+      "en": "Expired token"
+    },
+    "normal": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+    },
+    "attack": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoxOTk5OTk5OTk5fQ.moXM8jbDeO1r17GuugwRmlMfM1i_GH-96FPzo2zqqIA"
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "الخدمة تتجاوز قاعدة expiry عند قراءة JWT.",
+      "en": "The service skips the expiry rule when reading a JWT."
+    },
+    "fix": {
+      "ar": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+      "en": "Enforce signature, algorithm, expiry, issuer, audience and purpose. This key is public and for training only."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة expiry عند قراءة JWT.",
+        "en": "You are testing a local Northstar service. The service skips the expiry rule when reading a JWT."
+      },
+      "interpretation": {
+        "ar": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+        "en": "Inspect checks_trace: does a failed rule coexist with authorized=true? The fix returns 401 and withholds private_profile. A valid control remains accepted. HMAC is real; the exercise clock is fixed."
+      },
+      "bad_code": "claims = decode_without_enforcing_expiry(token)",
+      "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "jwt-audience",
+    "group": "jwt",
+    "title": {
+      "ar": "رمز مخصص لخدمة أخرى",
+      "en": "Wrong audience"
+    },
+    "normal": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+    },
+    "attack": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJiaWxsaW5nIiwicHVycG9zZSI6ImFjY2VzcyIsImV4cCI6MjAwMDAwMzYwMH0.urd7L2RQhXd03PjwHoWxYjm0wTVH2JScESaZ00dPaXk"
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "الخدمة تتجاوز قاعدة audience عند قراءة JWT.",
+      "en": "The service skips the audience rule when reading a JWT."
+    },
+    "fix": {
+      "ar": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+      "en": "Enforce signature, algorithm, expiry, issuer, audience and purpose. This key is public and for training only."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة audience عند قراءة JWT.",
+        "en": "You are testing a local Northstar service. The service skips the audience rule when reading a JWT."
+      },
+      "interpretation": {
+        "ar": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+        "en": "Inspect checks_trace: does a failed rule coexist with authorized=true? The fix returns 401 and withholds private_profile. A valid control remains accepted. HMAC is real; the exercise clock is fixed."
+      },
+      "bad_code": "claims = decode_without_enforcing_audience(token)",
+      "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "jwt-issuer",
+    "group": "jwt",
+    "title": {
+      "ar": "جهة إصدار غير موثوقة",
+      "en": "Untrusted issuer"
+    },
+    "normal": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+    },
+    "attack": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6InVudHJ1c3RlZCIsImF1ZCI6ImNsYXNzcm9vbSIsInB1cnBvc2UiOiJhY2Nlc3MiLCJleHAiOjIwMDAwMDM2MDB9.1nM9BZ0ftMf_hnTmY9CpUC9NRoPLcVVkLWlbrixq2Iw"
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "الخدمة تتجاوز قاعدة issuer عند قراءة JWT.",
+      "en": "The service skips the issuer rule when reading a JWT."
+    },
+    "fix": {
+      "ar": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+      "en": "Enforce signature, algorithm, expiry, issuer, audience and purpose. This key is public and for training only."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة issuer عند قراءة JWT.",
+        "en": "You are testing a local Northstar service. The service skips the issuer rule when reading a JWT."
+      },
+      "interpretation": {
+        "ar": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+        "en": "Inspect checks_trace: does a failed rule coexist with authorized=true? The fix returns 401 and withholds private_profile. A valid control remains accepted. HMAC is real; the exercise clock is fixed."
+      },
+      "bad_code": "claims = decode_without_enforcing_issuer(token)",
+      "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "jwt-purpose",
+    "group": "jwt",
+    "title": {
+      "ar": "رمز استعادة بدل رمز وصول",
+      "en": "Reset token used as access"
+    },
+    "normal": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+    },
+    "attack": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoicGFzc3dvcmQtcmVzZXQiLCJleHAiOjIwMDAwMDM2MDB9.BZ8RCcKfuM8B5-kheg2B6FB6-umBGyxY70yI7XTFzps"
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "الخدمة تتجاوز قاعدة purpose عند قراءة JWT.",
+      "en": "The service skips the purpose rule when reading a JWT."
+    },
+    "fix": {
+      "ar": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+      "en": "Enforce signature, algorithm, expiry, issuer, audience and purpose. This key is public and for training only."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة purpose عند قراءة JWT.",
+        "en": "You are testing a local Northstar service. The service skips the purpose rule when reading a JWT."
+      },
+      "interpretation": {
+        "ar": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+        "en": "Inspect checks_trace: does a failed rule coexist with authorized=true? The fix returns 401 and withholds private_profile. A valid control remains accepted. HMAC is real; the exercise clock is fixed."
+      },
+      "bad_code": "claims = decode_without_enforcing_purpose(token)",
+      "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "assignment-role",
+    "group": "assignment",
+    "title": {
+      "ar": "الدور الإداري",
+      "en": "Administrator role"
+    },
+    "normal": {
+      "patch": {
+        "display_name": "Alice Learner"
+      }
+    },
+    "attack": {
+      "patch": {
+        "display_name": "Alice Learner",
+        "role": "admin"
+      }
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "تحديث الملف يقبل الحقل الحساس role من العميل.",
+      "en": "The profile update accepts the protected role field from the client."
+    },
+    "fix": {
+      "ar": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+      "en": "Explicitly allow display fields and reject protected changes, including nested fields."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس role من العميل.",
+        "en": "You are testing a local Northstar service. The profile update accepts the protected role field from the client."
+      },
+      "interpretation": {
+        "ar": "أضف role داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+        "en": "Add role inside patch and compare before and after. The vulnerable service persists the protected value; the fix returns 403 without mutation. display_name alone still succeeds."
+      },
+      "bad_code": "profile.update(body[\"patch\"])",
+      "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "assignment-verified",
+    "group": "assignment",
+    "title": {
+      "ar": "تأكيد البريد",
+      "en": "Email verification"
+    },
+    "normal": {
+      "patch": {
+        "display_name": "Alice Learner"
+      }
+    },
+    "attack": {
+      "patch": {
+        "display_name": "Alice Learner",
+        "email_verified": true
+      }
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "تحديث الملف يقبل الحقل الحساس email_verified من العميل.",
+      "en": "The profile update accepts the protected email_verified field from the client."
+    },
+    "fix": {
+      "ar": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+      "en": "Explicitly allow display fields and reject protected changes, including nested fields."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس email_verified من العميل.",
+        "en": "You are testing a local Northstar service. The profile update accepts the protected email_verified field from the client."
+      },
+      "interpretation": {
+        "ar": "أضف email_verified داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+        "en": "Add email_verified inside patch and compare before and after. The vulnerable service persists the protected value; the fix returns 403 without mutation. display_name alone still succeeds."
+      },
+      "bad_code": "profile.update(body[\"patch\"])",
+      "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "assignment-balance",
+    "group": "assignment",
+    "title": {
+      "ar": "الرصيد المالي",
+      "en": "Account credit"
+    },
+    "normal": {
+      "patch": {
+        "display_name": "Alice Learner"
+      }
+    },
+    "attack": {
+      "patch": {
+        "display_name": "Alice Learner",
+        "credit": 100000
+      }
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "تحديث الملف يقبل الحقل الحساس credit من العميل.",
+      "en": "The profile update accepts the protected credit field from the client."
+    },
+    "fix": {
+      "ar": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+      "en": "Explicitly allow display fields and reject protected changes, including nested fields."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس credit من العميل.",
+        "en": "You are testing a local Northstar service. The profile update accepts the protected credit field from the client."
+      },
+      "interpretation": {
+        "ar": "أضف credit داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+        "en": "Add credit inside patch and compare before and after. The vulnerable service persists the protected value; the fix returns 403 without mutation. display_name alone still succeeds."
+      },
+      "bad_code": "profile.update(body[\"patch\"])",
+      "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "assignment-tenant",
+    "group": "assignment",
+    "title": {
+      "ar": "المؤسسة",
+      "en": "Tenant membership"
+    },
+    "normal": {
+      "patch": {
+        "display_name": "Alice Learner"
+      }
+    },
+    "attack": {
+      "patch": {
+        "display_name": "Alice Learner",
+        "tenant": "south"
+      }
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "تحديث الملف يقبل الحقل الحساس tenant من العميل.",
+      "en": "The profile update accepts the protected tenant field from the client."
+    },
+    "fix": {
+      "ar": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+      "en": "Explicitly allow display fields and reject protected changes, including nested fields."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس tenant من العميل.",
+        "en": "You are testing a local Northstar service. The profile update accepts the protected tenant field from the client."
+      },
+      "interpretation": {
+        "ar": "أضف tenant داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+        "en": "Add tenant inside patch and compare before and after. The vulnerable service persists the protected value; the fix returns 403 without mutation. display_name alone still succeeds."
+      },
+      "bad_code": "profile.update(body[\"patch\"])",
+      "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "assignment-owner",
+    "group": "assignment",
+    "title": {
+      "ar": "مالك الحساب",
+      "en": "Account owner"
+    },
+    "normal": {
+      "patch": {
+        "display_name": "Alice Learner"
+      }
+    },
+    "attack": {
+      "patch": {
+        "display_name": "Alice Learner",
+        "owner": "bob"
+      }
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "تحديث الملف يقبل الحقل الحساس owner من العميل.",
+      "en": "The profile update accepts the protected owner field from the client."
+    },
+    "fix": {
+      "ar": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+      "en": "Explicitly allow display fields and reject protected changes, including nested fields."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس owner من العميل.",
+        "en": "You are testing a local Northstar service. The profile update accepts the protected owner field from the client."
+      },
+      "interpretation": {
+        "ar": "أضف owner داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+        "en": "Add owner inside patch and compare before and after. The vulnerable service persists the protected value; the fix returns 403 without mutation. display_name alone still succeeds."
+      },
+      "bad_code": "profile.update(body[\"patch\"])",
+      "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  },
+  {
+    "id": "assignment-nested",
+    "group": "assignment",
+    "title": {
+      "ar": "صلاحية متداخلة",
+      "en": "Nested permission"
+    },
+    "normal": {
+      "patch": {
+        "display_name": "Alice Learner"
+      }
+    },
+    "attack": {
+      "patch": {
+        "display_name": "Alice Learner",
+        "permissions": {
+          "export": true
+        }
+      }
+    },
+    "level": "advanced",
+    "cause": {
+      "ar": "تحديث الملف يقبل الحقل الحساس permissions من العميل.",
+      "en": "The profile update accepts the protected permissions field from the client."
+    },
+    "fix": {
+      "ar": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+      "en": "Explicitly allow display fields and reject protected changes, including nested fields."
+    },
+    "lesson": {
+      "story": {
+        "ar": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس permissions من العميل.",
+        "en": "You are testing a local Northstar service. The profile update accepts the protected permissions field from the client."
+      },
+      "interpretation": {
+        "ar": "أضف permissions داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+        "en": "Add permissions inside patch and compare before and after. The vulnerable service persists the protected value; the fix returns 403 without mutation. display_name alone still succeeds."
+      },
+      "bad_code": "profile.update(body[\"patch\"])",
+      "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})",
+      "steps": [
+        {
+          "ar": "شغّل الطلب السليم في المُصلحة وسجّل البيانات المسموح بها.",
+          "en": "Run the fixed control and inspect the permitted data."
+        },
+        {
+          "ar": "عدّل الحقل المشار إليه، وشغّل الطلب في الضعيفة. افحص الأثر الفعلي.",
+          "en": "Change the described field and run the vulnerable request. Inspect the actual effect."
+        },
+        {
+          "ar": "أعد نفس المدخل في المُصلحة. قارن الاستجابة والحالة قبل الطلب وبعده.",
+          "en": "Replay identical input against the fix. Compare response and state before and after."
+        }
+      ]
+    }
+  }
+]
