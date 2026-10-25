@@ -57,6 +57,9 @@ jobs:
           node --check web/result-view.js
           node --check web/experience.js
           node --check web/feedback.js
+          node --check web/learning.js
+          node --check web/code-worker.js
+          node --check web/offline-bridge.js
           node --check web/studio.js
           node --check web/academy.js
           node --check web/sw.js

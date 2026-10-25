@@ -56,4 +56,30 @@ def invoke(raw):
  request=json.loads(raw)
  if request.get('action')=='health':return json.dumps({'ready':True,'cases':len(CATALOG)})
  if request.get('action')=='preview':return json.dumps({'html':preview(request['token'])})
- return json.dumps(dispatch(request),ensure_ascii=False)
+ return json.dumps(dispatch_traced(request) if request.get('trace') else dispatch(request),ensure_ascii=False)
+
+# Optional teaching trace. These are actual interpreter events, not inferred steps.
+def dispatch_traced(request):
+ import sys,os
+ events=[];truncated=False
+ allowed={'academy.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','academy_http.py'}
+ def observe(frame,event,arg):
+  nonlocal truncated
+  filename=os.path.basename(frame.f_code.co_filename)
+  if filename not in allowed or event not in {'line','return'}:return observe
+  if len(events)>=180:truncated=True;return observe
+  values={}
+  for key,value in list(frame.f_locals.items()):
+   if key.startswith('_') or key in {'self','academy','integer','text'}:continue
+   if isinstance(value,(str,int,float,bool,type(None),dict,list,tuple)):
+    try:values[key]=repr(value)[:360]
+    except Exception:pass
+   if len(values)>=8:break
+  events.append({'file':filename,'line':frame.f_lineno,'function':frame.f_code.co_name,'event':event,'values':values,**({'return':repr(arg)[:500]} if event=='return' else {})})
+  return observe
+ previous=sys.gettrace()
+ try:
+  sys.settrace(observe);result=dispatch(request)
+ finally:sys.settrace(previous)
+ result['trace']={'events':events,'truncated':truncated,'semantics':'line events occur before that line executes; values are bounded repr snapshots'}
+ return result
