@@ -17,6 +17,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install pinned browser Python runtime
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Bundle original engines for web and Android
+        run: npm run prepare:practice
+      - name: Verify original engines in WebAssembly
+        run: npm run test:wasm
       - name: Build shared content
         run: python tools/build_content.py
       - name: Check generated content is committed
@@ -27,6 +33,10 @@ jobs:
         run: |
           node --check web/app.js
           node --check web/sw.js
+          node --check web/academy.js
+          node --check web/studio.js
+          node --check web/engine-worker.js
+          node --check web/offline-bridge.js
   android:
     needs: quality
     runs-on: ubuntu-latest
@@ -36,6 +46,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bundle local practice engine
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm run prepare:practice
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
@@ -50,8 +65,47 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
-  publish-apk:
+  android-smoke:
     needs: [quality, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bundle the same browser runtime into the APK
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm run prepare:practice
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Enable emulator hardware acceleration
+        run: sudo chmod a+rw /dev/kvm
+      - name: Exercise bundled Python, SQLite and sandboxed XSS in Android WebView
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          disable-animations: true
+          script: gradle --no-daemon :app:connectedDebugAndroidTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-practice-instrumentation-results
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+  publish-apk:
+    needs: [quality, android, android-smoke]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
