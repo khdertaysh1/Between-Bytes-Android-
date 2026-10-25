@@ -53,6 +53,7 @@ jobs:
         run: |
           node --check web/app.js
           node --check web/config.js
+          node --check web/case-controls.js
           node --check web/experience.js
           node --check web/feedback.js
           node --check web/studio.js

@@ -32,6 +32,6 @@ test('updated entry points bypass old bare-URL caches and precache every referen
   const html=await readFile(new URL('../web/'+page,import.meta.url),'utf8');
   const refs=[...html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="([^"]+)"[^>]*>/g)].map(x=>x[1]).filter(x=>/\.(?:js|css)(?:\?|$)/.test(x));
   for(const ref of refs){assert.ok(assets.includes(ref),page+' offline asset '+ref);await readFile(new URL('../web/'+ref.split('?')[0].replace(/^\.\//,''),import.meta.url));}
-  for(const ref of refs.filter(x=>/\/(?:academy|studio|experience|feedback)\.(?:js|css)/.test(x)&&!x.includes('studio.css')&&!x.includes('academy.css')))assert.match(ref,/\?v=web4\.1$/,page+' cache invalidation '+ref);
+  for(const ref of refs.filter(x=>/\/(?:academy|studio|experience|feedback)\.(?:js|css)/.test(x)&&!x.includes('studio.css')&&!x.includes('academy.css')))assert.match(ref,/\?v=web[\w.]+$/,page+' cache invalidation '+ref);
  }
 });

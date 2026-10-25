@@ -1,0 +1,25 @@
+'use strict';
+window.BBCaseControls=(()=>{
+ const actions={
+ 'pay-price':['تحديث عرض السعر','Update quote'],'pay-quantity':['تحديث سلة الشراء','Update cart'],'pay-discount':['تطبيق الخصم','Apply discount'],'pay-coupon-reuse':['استخدام القسيمة','Redeem coupon'],'pay-currency':['تحديث العملة','Update currency'],'pay-rounding':['احتساب المبلغ','Calculate amount'],'pay-total':['تحديث الإجمالي','Update total'],'pay-shipping':['احتساب الشحن','Calculate shipping'],'pay-tax':['احتساب الضريبة','Calculate tax'],'pay-status':['تأكيد حالة الدفع','Confirm payment status'],'pay-webhook':['التحقق من إشعار الدفع','Verify payment notification'],'pay-binding':['ربط إيصال الدفع','Bind payment receipt'],'pay-replay':['معالجة حدث الدفع','Process payment event'],'pay-refund':['طلب استرداد','Request refund'],'pay-gift':['صرف رصيد الهدية','Redeem gift credit'],'pay-trial':['تقديم طلب الاشتراك','Submit subscription'],
+ 'acl-read':['قراءة المستند','Read document'],'acl-write':['حفظ المستند','Save document'],'acl-delete':['حذف المستند التدريبي','Delete fixture document'],'acl-nested':['فتح المورد الفرعي','Open nested resource'],'acl-tenant':['قراءة مستند المؤسسة','Read tenant document'],'acl-batch':['قراءة المستندات المحددة','Read selected documents'],'acl-export':['فتح مهمة التصدير','Open export job'],'acl-download':['قراءة ملف التصدير','Read export file'],'acl-role':['تنفيذ العملية المطلوبة','Run requested operation'],'acl-mass':['حفظ بيانات الملف','Save profile fields'],
+ 'code-sqli':['ابحث في المستندات','Search documents'],'code-nosql':['التحقق من تسجيل الدخول','Check sign-in'],'code-template':['معاينة القالب','Preview template'],
+ 'xss-stored':['نشر التعليق','Publish comment'],'xss-dom-query':['عرض نتائج البحث','Show search results'],'xss-dom-fragment':['عرض جزء الصفحة','Render page fragment'],'xss-url':['عرض رابط المتابعة','Render destination link'],
+ 'authentication-reset-binding':['تغيير كلمة المرور التدريبية','Change fixture password'],'authentication-reset-replay':['استخدام رمز الاستعادة','Use reset token'],'authentication-reset-expiry':['التحقق من صلاحية الرمز','Check token validity'],'authentication-logout':['التحقق من الجلسة','Check session'],'authentication-mfa':['فحص اكتمال التحقق','Check authentication level'],'authentication-purpose':['تنفيذ استعادة الحساب','Perform account recovery']
+ };
+ function describe(row){
+  const normal=row.normal;
+  let resources=[];
+  if(row.group==='access'){
+   const key=['object','objects','child'].find(k=>Object.hasOwn(normal,k));
+   if(key)resources=[['a-1','Alice'],['b-1','Bob'],['c-1','Carol']].map(([id,owner])=>({label:owner+' · '+id,key,value:key==='objects'?[id]:id,owner}));
+   else if(normal.job)resources=['alice','bob'].map(owner=>({label:'export-'+owner,key:'job',value:'export-'+owner,owner}));
+   else if(normal.file)resources=['alice','bob'].map(owner=>({label:'file-'+owner,key:'file',value:'file-'+owner,owner}));
+  }
+  const fixture=row.group==='upload'?{...normal}:null;
+  const mutating=row.group==='payment'||row.group==='assignment'||row.group==='authentication'||row.group==='upload'||['acl-write','acl-delete','acl-mass','csrf-missing','csrf-empty','csrf-binding','csrf-origin','csrf-get','csrf-content-type','xss-stored'].includes(row.id);
+  return {action:actions[row.id],resources,fixture,mutating};
+ }
+ const fields={refund:['قيمة الاسترداد · بالسنت','Refund · minor units'],spend:['قيمة الصرف · بالسنت','Spend · minor units'],repeat:['عدد العمليات','Operation count'],discount:['نسبة الخصم','Discount percent'],amount:['المبلغ العشري بالدولار','Decimal amount in dollars'],total:['الإجمالي · بالسنت','Total · minor units'],shipping:['رسوم الشحن · بالسنت','Shipping · minor units'],tax:['الضريبة · بالسنت','Tax · minor units'],receipt:['مرجع إيصال الدفع','Payment receipt reference'],payment:['مرجع الدفعة','Payment reference'],event:['نوع إشعار الدفع','Payment event type'],event_id:['معرف الحدث','Event ID'],signature:['توقيع الإشعار','Notification signature'],plan:['خطة الاشتراك','Subscription plan'],purchase:['نوع الاشتراك','Subscription type'],objects:['معرفات المستندات · JSON','Document IDs · JSON'],parent:['المورد الأب','Parent resource'],child:['المورد الفرعي','Child resource'],tenant:['معرف المؤسسة','Tenant ID'],job:['معرف مهمة التصدير','Export job ID'],file:['مرجع ملف التصدير','Export file reference'],role:['الدور المرسل للتطبيق','Submitted role'],action:['العملية المطلوبة','Requested action'],time:['الوقت التدريبي · بالثواني','Fixture clock · seconds'],route:['مسار التحقق','Verification route'],challenge:['معرف تحدي التحقق','Challenge ID']};
+ return {describe,fields};
+})();
