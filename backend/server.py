@@ -23,6 +23,7 @@ def init():
         CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,email TEXT UNIQUE,name TEXT,salt TEXT,password TEXT);
         CREATE TABLE IF NOT EXISTS sessions(digest TEXT PRIMARY KEY,user_id TEXT REFERENCES users(id),expires INTEGER);
         CREATE TABLE IF NOT EXISTS completions(user_id TEXT REFERENCES users(id),lab TEXT,score INTEGER,day TEXT,PRIMARY KEY(user_id,lab));
+        CREATE TABLE IF NOT EXISTS activity(user_id TEXT REFERENCES users(id),day TEXT,PRIMARY KEY(user_id,day));
         CREATE TABLE IF NOT EXISTS attempts(user_id TEXT REFERENCES users(id),event TEXT,result TEXT,PRIMARY KEY(user_id,event));
         ''')
 
@@ -32,7 +33,7 @@ def password_hash(password,salt):
 def profile(c,uid):
     u=c.execute('SELECT name,email FROM users WHERE id=?',(uid,)).fetchone()
     rows=c.execute('SELECT lab,score,day FROM completions WHERE user_id=?',(uid,)).fetchall()
-    days={r['day'] for r in rows};today=dt.datetime.now(dt.timezone.utc).date()
+    days={r['day'] for r in c.execute('SELECT day FROM activity WHERE user_id=?',(uid,))};today=dt.datetime.now(dt.timezone.utc).date()
     cursor=today if today.isoformat() in days else today-dt.timedelta(days=1)
     streak=0
     while cursor.isoformat() in days:streak+=1;cursor-=dt.timedelta(days=1)
@@ -76,6 +77,7 @@ def attempt(c,uid,data):
     score=math.floor(100*sum(a==q['answer'] for a,q in zip(answers,quiz))/len(quiz));passed=score>=80
     if passed:
         day=dt.datetime.now(dt.timezone.utc).date().isoformat()
+        c.execute('INSERT OR IGNORE INTO activity VALUES(?,?)',(uid,day))
         c.execute('INSERT INTO completions VALUES(?,?,?,?) ON CONFLICT(user_id,lab) DO UPDATE SET score=MAX(score,excluded.score)',(uid,lab_id,score,day))
     result={'score':score,'passed':passed}
     c.execute('INSERT INTO attempts VALUES(?,?,?)',(uid,event,json.dumps(result)))
