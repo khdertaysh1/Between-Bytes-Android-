@@ -80,3 +80,14 @@ json.dumps(rows)
  assert.equal(invoke({path:'/academy/api/assignment/assignment-role/fixed',method:'POST',input:{patch:{display_name:'A',role:true}}}).status,400);
  assert.equal(invoke({path:'/academy/api/assignment/assignment-nested/fixed',method:'POST',input:{patch:{display_name:'A',permissions:{export:'true'}}}}).status,400);
 });
+test('redirect parsing accepts learner-created destinations and each weak rule differs from fixed and from the other weak rules',()=>{
+ const samples={ 'code-redirect':'https://attacker.test/new-page', 'redirect-relative':'//attacker.test/new-page', 'redirect-backslash':'/\\attacker.test/new-page', 'redirect-encoded':'%2f%2fattacker.test%2fnew-page', 'redirect-suffix':'https://app.lab.attacker.test/new-page', 'redirect-nested':'/continue?next=https%3A%2F%2Fattacker.test%2Fnew-page' };
+ for(const [id,next] of Object.entries(samples)){
+  const call=(mode,next)=>invoke({path:'/academy/api/redirect/'+id+'/'+mode,method:'POST',input:{next}});
+  const weak=call('vulnerable',next),fixed=call('fixed',next);
+  assert.equal(weak.status,200,id);assert.equal(weak.body.data.policy_allowed,true,id);assert.match(weak.body.data.destination,/attacker\.test/);assert.equal(weak.body.data.external,true,id);assert.equal(fixed.status,403,id);assert.equal(fixed.body.data.destination,null,id);
+  for(const mode of ['vulnerable','fixed'])for(const path of ['/welcome','/account'])assert.equal(call(mode,path).status,200,id+' '+mode+' internal');
+  assert.equal(call('fixed','https://app.lab/continue?next='+encodeURIComponent(next)).status,403,id+' nested fixed');
+  if(id!=='code-redirect')assert.equal(call('vulnerable','https://untrusted.test/direct').status,403,id+' distinct weak check');
+ }
+});

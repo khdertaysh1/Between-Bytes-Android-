@@ -271,7 +271,7 @@ const token=TOKEN;
 function send(type,extra={}){parent.postMessage({type,token,...extra},'*')}
 window.alert=v=>send('academy-executed',{value:String(v).slice(0,80)});
 window.addEventListener('error',e=>send('academy-error',{message:e.message.slice(0,120)}));
-</script><h3>Northstar preview · synthetic data</h3>'''.replace('TOKEN',json.dumps(token))
+</script><style>body{font:16px system-ui;background:#14211d;color:#e4eee8;padding:20px;overflow-wrap:anywhere}a{color:#a5e2ba}input,button{font:inherit;padding:10px;background:#20382d;color:#e4eee8;border:1px solid #52765d;border-radius:6px}#link-state{margin-top:16px}</style><h3>Northstar · sandbox preview</h3>'''.replace('TOKEN',json.dumps(token))
     if kind in {'html','stored'}:body='<div id="output">'+(safe if fixed else value)+'</div>'
     elif kind in {'attr-double','attr-single','attr-bare'}:
         if fixed:body='<input id="output" value="'+safe+'">'
@@ -286,7 +286,7 @@ window.addEventListener('error',e=>send('academy-error',{message:e.message.slice
     elif kind=='url':
         allowed=value in {'/welcome','/account'}
         href = value if not fixed or allowed else '#blocked'
-        body='<a id="output" href="'+html.escape(href,quote=True)+'">Local fixture link</a><script>const link=document.getElementById("output");send("academy-url-policy",{dangerous:link.getAttribute("href").toLowerCase().startsWith("javascript:"),href:link.getAttribute("href")});</script>'
+        body='<a id="output" href="'+html.escape(href,quote=True)+'">Local fixture link</a><script>const link=document.getElementById("output");send("academy-url-policy",{dangerous:link.getAttribute("href").toLowerCase().startsWith("javascript:"),href:link.getAttribute("href")});link.addEventListener("click",event=>{const href=link.getAttribute("href");if(href.toLowerCase().startsWith("javascript:")){event.preventDefault();document.getElementById("link-state").textContent="URL policy allowed JavaScript. Simulated click only; script not executed.";send("academy-link-click",{href,simulated:true,dangerous:true});return;}if(href==="#blocked"||["/welcome","/account"].includes(href)){event.preventDefault();document.getElementById("link-state").textContent=href==="#blocked"?"Navigation blocked — still on start page":"Local page: "+href;send("academy-link-click",{href,blocked:href==="#blocked"});}});</script><p id="link-state">Click the fixture link to test its behavior.</p>'
     else:
         source = 'input'
         setup='const input='+js+';'

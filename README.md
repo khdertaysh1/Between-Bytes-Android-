@@ -1,4 +1,6 @@
-# Between Bytes Academy · Web 0.7 / Android 0.3.0
+# Between Bytes Academy · Web 0.8.1 / Android 0.3.0
+
+تفاصيل إصلاحات التحويل وJWT ونتائج فحص كل حالة: [تدقيق Web 0.8.1](docs/CASE_AUDIT_WEB_081.md).
 
 ## تجربة الويب الحالية
 
