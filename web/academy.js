@@ -105,7 +105,7 @@ async function send(){
   const evidence=await fetch('/academy/evidence?'+new URLSearchParams({case:id,mode}));const result=await evidence.json();
   if(result.request_id!==wire.headers.get('x-request-id'))throw new Error('Evidence changed in another tab; send the request again.');
   if(ticket!==sequence||current?.id!==id)return;
-  BBStudio.assessment(result);
+  result.http_status=wire.status;result.response_body=body;BBStudio.assessment(result);
   if(current.group==='payment'&&mode==='vulnerable'&&result.impact)$('decision-note').textContent=t('weakAccepted');
   history.push({input,http:{path,method:'POST',status:wire.status,headers,body},assessment:result});history=history.slice(-30);
   if(current.group==='payment'){const data=await readback(mode);if(ticket!==sequence)return;if(data)checkoutSummary(data,body);}
@@ -118,10 +118,10 @@ async function send(){
 window.addEventListener('message',event=>{
  if(event.source!==$('preview').contentWindow||!preview||event.data?.token!==preview.token||preview.ticket!==sequence)return;
  const data=event.data;BBStudio.browserMessage(data);
- if(data.type==='academy-error'){preview.runtimeError=true;$('browser-evidence').textContent=(lang==='ar'?'خطأ JavaScript في المعاينة: ':'Preview JavaScript error: ')+String(data.message||'').slice(0,120);history.push({browser:data,mode:preview.mode,input:preview.input});}
- if(data.type==='academy-executed'){preview.executed=true;browserChecks[preview.mode+':'+preview.input]=true;$('browser-evidence').textContent=t('executed')+data.value;history.push({browser:data,mode:preview.mode,input:preview.input});if(preview.mode==='vulnerable'){checks.weak_impact=true;showChecks();}}
+ if(data.type==='academy-error'){preview.runtimeError=true;BBExperience.browserObservation({runtimeError:true});$('browser-evidence').textContent=(lang==='ar'?'خطأ JavaScript في المعاينة: ':'Preview JavaScript error: ')+String(data.message||'').slice(0,120);history.push({browser:data,mode:preview.mode,input:preview.input});}
+ if(data.type==='academy-executed'){preview.executed=true;BBExperience.browserObservation({executed:true});browserChecks[preview.mode+':'+preview.input]=true;$('browser-evidence').textContent=t('executed')+data.value;history.push({browser:data,mode:preview.mode,input:preview.input});if(preview.mode==='vulnerable'){checks.weak_impact=true;showChecks();}}
  if(data.type==='academy-url-policy'&&current?.id==='xss-url'){
-  preview.urlPolicy=true;$('browser-evidence').textContent=t('urlPolicy')+data.href;
+  preview.urlPolicy=true;BBExperience.browserObservation({urlPolicy:true,dangerous:!!data.dangerous});$('browser-evidence').textContent=t('urlPolicy')+data.href;
   if(preview.mode==='vulnerable'&&data.dangerous){checks.weak_impact=true;browserChecks['vulnerable:'+preview.input]=true;}
   if(preview.mode==='fixed'&&!data.dangerous&&browserChecks['vulnerable:'+preview.input])checks.fixed_rejects=true;
   if(preview.mode==='fixed'&&!data.dangerous&&preview.input===JSON.stringify(current.normal))checks.fixed_control=true;
@@ -131,6 +131,7 @@ window.addEventListener('message',event=>{
   preview.rendered=true;const shot=preview;
   setTimeout(()=>{
    if(preview!==shot||shot.ticket!==sequence)return;
+   BBExperience.browserObservation({observed:true,executed:shot.executed,runtimeError:!!shot.runtimeError});
    if(!shot.executed&&!shot.urlPolicy&&!shot.runtimeError)$('browser-evidence').textContent=t('rendered');
    if(shot.mode==='vulnerable'&&shot.executed)checks.weak_impact=true;
    if(shot.mode==='fixed'&&!shot.executed&&!shot.runtimeError&&browserChecks['vulnerable:'+shot.input])checks.fixed_rejects=true;

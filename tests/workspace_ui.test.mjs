@@ -16,7 +16,7 @@ async function workspace(){
  const dom=new JSDOM(await source('index.html'),{url:'https://academy.test/',runScripts:'outside-only',virtualConsole:vc});const w=dom.window,d=w.document;
  w.HTMLElement.prototype.scrollIntoView=()=>{};w.scrollTo=()=>{};w.matchMedia=()=>({matches:false});w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};w.TextDecoder=TextDecoder;w.TextEncoder=TextEncoder;w.Headers=Headers;
  w.BBEngine={fetch:async(path,options={})=>{if(path==='/rooms/session')return new Response('{"local":true}');if(path==='/academy/catalog')return new Response(JSON.stringify({cases}));const request={path,method:options.method||'GET',headers:options.headers||{}};if(typeof options.body==='string')request.input=JSON.parse(options.body);else if(options.body)request.fields=Object.fromEntries(options.body);const r=invoke(request);return new Response(JSON.stringify(r.body),{status:r.status,headers:r.headers});},preview:async token=>invoke({action:'preview',token}).html};
- for(const file of ['case-controls.js','experience.js','studio.js','academy.js'])w.eval(await source(file));
+ for(const file of ['case-controls.js','result-view.js','experience.js','studio.js','academy.js'])w.eval(await source(file));
  await until(()=>d.querySelectorAll('.lab-card').length===15,'catalog');
  const go=async row=>{w.location.hash='#/'+row.group+'/'+row.id;await until(()=>d.getElementById('room-meta').textContent.endsWith(row.id),'route '+row.id);};
  const click=id=>d.getElementById(id).click();
@@ -88,10 +88,21 @@ test('all 96 non-browser cases reproduce impact and matching fixed protection th
   await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');ui.variant('fixed');ui.click('studio-control');await ui.submit('studio-submit');
   ui.variant('vulnerable');if(row.group==='rate'){edit(row.normal);await ui.submit('studio-submit');}
   edit(row.attack);await ui.submit('studio-submit');const weak=invoke({path:'/academy/evidence?case='+row.id+'&mode=vulnerable'}).body;
-  ui.variant('fixed');edit(row.attack);await ui.submit('studio-submit');const fixed=invoke({path:'/academy/evidence?case='+row.id+'&mode=fixed'}).body;
+  assert.equal(ui.d.getElementById('service-effect').dataset.state,'impact',row.id+' weak visible impact');assert.equal(ui.d.getElementById('service-effect').dataset.mode,'vulnerable');const weakView=ui.d.getElementById('service-effect').querySelector('.result-content').textContent;
+  ui.variant('fixed');assert.equal(ui.d.getElementById('service-effect').dataset.state,'waiting');assert.deepEqual(JSON.parse(ui.d.getElementById('input').value),row.attack);edit(row.attack);await ui.submit('studio-submit');const fixed=invoke({path:'/academy/evidence?case='+row.id+'&mode=fixed'}).body;
+  assert.equal(ui.d.getElementById('service-effect').dataset.state,'protected',row.id+' fixed visible rejection');assert.equal(ui.d.getElementById('service-effect').dataset.mode,'fixed');assert.notEqual(ui.d.getElementById('service-effect').querySelector('.result-content').textContent,weakView,row.id+' different rendered result');assert.equal(ui.d.getElementById('response-comparison').hidden,false);assert.equal(ui.d.querySelectorAll('[data-comparison-mode] [data-result-key], [data-comparison-mode] dd').length>0,true,row.id+' real response comparison');
   if(!weak.impact||!fixed.protected||!fixed.flag)failures.push({id:row.id,weak:weak.status,fixed:fixed.status,error:ui.d.getElementById('service-error').textContent});
   assert.deepEqual(JSON.parse(ui.d.getElementById('input').value),row.attack,row.id+' typed interceptor');
  }
  assert.deepEqual(failures,[]);
  }finally{ui.dom.window.close();}
+});
+
+test('fixed null resources, empty results and HTTP 200 protections remain visible in the app viewport',async()=>{
+ const ui=await workspace();try{for(const id of ['acl-read','disclosure-env','code-sqli','cors-reflect','authentication-reset-binding','code-redirect']){const row=cases.find(c=>c.id===id);await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');ui.d.getElementById('input').value=JSON.stringify(row.attack);ui.variant('fixed');await ui.submit('service-submit');const out=ui.d.getElementById('service-effect');assert.equal(out.hidden,false,id);assert.equal(out.dataset.state,'protected',id);assert.match(out.textContent,/مُنعت/);assert.ok(out.querySelector('.result-content').textContent.length>15,id);}}
+ finally{ui.dom.window.close();}
+});
+test('paired replay sends the current body to the other variant and reset clears comparison',async()=>{
+ const ui=await workspace();try{const row=cases.find(c=>c.id==='acl-read');await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');ui.d.getElementById('input').value=JSON.stringify(row.attack);ui.variant('vulnerable');await ui.submit('service-submit');await ui.submit('compare-replay');assert.equal(ui.d.getElementById('studio-mode').value,'fixed');assert.equal(ui.d.querySelector('[data-comparison-mode=vulnerable]').dataset.state,'impact');assert.equal(ui.d.querySelector('[data-comparison-mode=fixed]').dataset.state,'protected');ui.d.querySelector('[data-service-field=object]').value='a-1';ui.d.querySelector('[data-service-field=object]').dispatchEvent(new ui.w.Event('input'));assert.equal(ui.d.getElementById('response-comparison').hidden,true);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');assert.equal(ui.d.getElementById('response-comparison').hidden,true);}
+ finally{ui.dom.window.close();}
 });
