@@ -50,3 +50,29 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+  publish-apk:
+    needs: [quality, android]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Between-Bytes-Academy-debug-APK
+          path: apk
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp apk/app-debug.apk Between-Bytes-Academy.apk
+          release_version=$(python -c "import re,pathlib; print(re.search(r\"versionName '([^']+)'\", pathlib.Path('app/build.gradle').read_text()).group(1))")
+          release_tag="v${release_version}"
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'Version already published; preserving the existing APK and signing identity.'
+          else
+            gh release create "$release_tag" Between-Bytes-Academy.apk --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Between Bytes Academy ${release_version} (preview)" --notes-file docs/RELEASE_NOTES.md --latest
+          fi
