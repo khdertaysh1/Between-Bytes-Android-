@@ -1,0 +1,9 @@
+.gradle/
+**/build/
+local.properties
+__pycache__/
+*.pyc
+*.db
+*.db-*
+.env
+.openai/

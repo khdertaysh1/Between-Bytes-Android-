@@ -1,0 +1,78 @@
+name: Academy checks and Android APK
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build shared content
+        run: python tools/build_content.py
+      - name: Check generated content is committed
+        run: git diff --exit-code shared/catalog.json web/catalog.json app/src/main/assets/catalog.json
+      - name: Test account isolation, progression and offline replay
+        run: python -m unittest discover -s tests -v
+      - name: Check browser scripts
+        run: |
+          node --check web/app.js
+          node --check web/sw.js
+  android:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build native Android APK
+        run: gradle --no-daemon :app:assembleDebug :app:lintDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Between-Bytes-Academy-debug-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+  publish-apk:
+    needs: [quality, android]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Between-Bytes-Academy-debug-APK
+          path: apk
+      - name: Publish direct APK download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp apk/app-debug.apk Between-Bytes-Academy.apk
+          release_version=$(python -c "import re,pathlib; print(re.search(r\"versionName '([^']+)'\", pathlib.Path('app/build.gradle').read_text()).group(1))")
+          release_tag="v${release_version}"
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'Version already published; preserving the existing APK and signing identity.'
+          else
+            gh release create "$release_tag" Between-Bytes-Academy.apk --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Between Bytes Academy ${release_version} (preview)" --notes-file docs/RELEASE_NOTES.md --latest
+          fi
