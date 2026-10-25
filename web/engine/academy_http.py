@@ -59,6 +59,9 @@ def response(academy,case,mode,result):
             if status==405:headers['Allow']='POST'
             payload={'error':{'code':code,'message':message},'data':deepcopy(result['data'])}
         else:payload={'data':deepcopy(result['data'])}
+    elif case.startswith('redirect-') or case=='code-redirect':
+        payload={'data':deepcopy(result['data'])}
+        if status>=400:payload['error']={'code':'destination_not_allowed','message':'The destination was rejected; the browser remains on the start page.'}
     elif case.startswith('cors-') and status==401:
         payload={'error':{'code':'session_required','message':'A valid session is required.'},'data':deepcopy(result['data'])}
     else:

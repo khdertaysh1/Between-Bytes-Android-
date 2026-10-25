@@ -3,7 +3,7 @@
 Origin, cookie and DNS fields are fixture inputs, not browser-controlled headers.
 CORS readability is an explicit policy model, not evidence from a real browser.
 """
-from urllib.parse import urlsplit, unquote
+from urllib.parse import urlsplit, unquote, parse_qs
 
 GROUPS = {'ssrf', 'csrf', 'cors', 'redirect'}
 APP = 'https://app.lab'
@@ -62,20 +62,33 @@ REDIRECT_ATTACKS={
 
 def redirect(case,fixed,d):
     raw=string(d,'next')
-    if case=='code-redirect':
-        # Retain the original direct-URL exercise's arbitrary local path control.
-        parsed=urlsplit(raw)
-        unsafe=bool(parsed.scheme or parsed.netloc) or raw not in {'/account','/welcome'}
-        destination=raw
-    else:
-        if raw not in {'/account','/welcome',REDIRECT_ATTACKS[case]}:raise ValueError('Choose a listed destination fixture')
-        destination=unquote(raw).replace('\\','/')
-        if case=='redirect-nested' and raw==REDIRECT_ATTACKS[case]:destination='https://outside.example/landing'
-        unsafe=raw==REDIRECT_ATTACKS[case]
-    external=bool(urlsplit(destination).scheme or urlsplit(destination).netloc)
-    blocked=fixed and unsafe
-    data={'submitted':raw,'destination':None if blocked else destination,'external':external,'navigation_performed':False,'policy_allowed':not blocked,'model':'destination decision only; no browser navigation'}
-    return outcome(403 if blocked else 200,data,external and not fixed,blocked,fixed and not unsafe)
+    # The weak checks deliberately run at different trust boundaries. Inputs are
+    # parsed, not compared against the attack fixture. No destination is fetched.
+    parsed=urlsplit(raw)
+    local=raw.startswith('/') and not raw.startswith('//')
+    checks=[]
+    if case=='code-redirect':allowed=True;rule='no destination validation'
+    elif case=='redirect-relative':allowed=raw.startswith('/');rule='starts with slash (allows network-path URLs)'
+    elif case=='redirect-backslash':allowed=local;rule='checks slashes before browser backslash normalization'
+    elif case=='redirect-encoded':allowed=not parsed.scheme and not parsed.netloc;rule='checks structure before percent decoding'
+    elif case=='redirect-suffix':allowed=local or raw.startswith(APP);rule='text prefix instead of exact origin'
+    else:allowed=local;rule='checks outer path but trusts nested next parameter'
+    destination=unquote(raw) if case=='redirect-encoded' else raw
+    destination=destination.replace('\\','/')
+    checks.append({'step':'weak validation','rule':rule,'allowed':allowed})
+    if case=='redirect-nested' and urlsplit(destination).path=='/continue':
+        nested=parse_qs(urlsplit(destination).query).get('next',[])
+        if nested:destination=nested[0].replace('\\','/')
+        checks.append({'step':'nested destination','destination':destination})
+    target=urlsplit(destination)
+    external=bool(target.netloc and target.netloc!='app.lab' or target.scheme and target.scheme not in {'http','https'})
+    safe=raw in {'/account','/welcome'}
+    accepted=safe if fixed else allowed
+    checks.append({'step':'final policy','allowed':accepted,'fixed':fixed})
+    data={'submitted':raw,'destination':destination if accepted else None,'external':external,
+          'navigation_performed':False,'policy_allowed':accepted,'trace':checks,
+          'model':'local policy decision; UI navigation is simulated; no external transport'}
+    return outcome(200 if accepted else 403,data,external and accepted and not fixed,fixed and not safe,fixed and safe)
 
 
 def csrf(case,fixed,d,state):
