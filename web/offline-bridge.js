@@ -12,12 +12,12 @@ window.BBEngine=(()=>{
  const labels={200:'OK',201:'Created',207:'Multi-Status',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',405:'Method Not Allowed',415:'Unsupported Media Type',422:'Unprocessable Content',429:'Too Many Requests'};
  async function transport(path,options={}){
   if(path==='/rooms/session')return new Response('{"local":true}',{headers:{'Content-Type':'application/json'}});
-  if(path==='/academy/catalog'){const results=await Promise.all(['academy_catalog.json','resource_catalog.json'].map(file=>nativeFetch(new URL('./engine/'+file,document.baseURI)).then(r=>{if(!r.ok)throw Error('Content could not load');return r.json();})));return new Response(JSON.stringify({cases:results.flat()}),{headers:{'Content-Type':'application/json'}});}
+  if(path==='/academy/catalog'){const results=await Promise.all(['academy_catalog.json','resource_catalog.json','advanced_catalog.json'].map(file=>nativeFetch(new URL('./engine/'+file,document.baseURI)).then(r=>{if(!r.ok)throw Error('Content could not load');return r.json();})));return new Response(JSON.stringify({cases:results.flat()}),{headers:{'Content-Type':'application/json'}});}
   if(!String(path).startsWith('/academy/'))throw Error('Only local Academy routes are supported');
   const request={path,method:options.method||'GET',headers:Object.fromEntries(new Headers(options.headers||{}))};
   if(options.body instanceof URLSearchParams)request.fields=Object.fromEntries(options.body);else if(options.body){if(options.body.length>32768)throw Error('Request too large');try{request.input=JSON.parse(options.body);}catch{throw Error('JSON body is invalid');}}
   const data=await call(request);return new Response(JSON.stringify(data.body),{status:data.status,statusText:labels[data.status]||'',headers:data.headers});
  }
  document.addEventListener('DOMContentLoaded',()=>{status('● عدّل الطلب ثم أرسله لتشغيل المختبر · بلا حساب');if('serviceWorker'in navigator&&location.hostname!=='appassets.androidplatform.net')navigator.serviceWorker.register('./sw.js').catch(()=>{});});
- return {fetch:transport,preview:async token=>(await call({action:'preview',token})).html,reset:()=>abort('بدأت جلسة محرك جديدة.')};
+ return {fetch:transport,preview:async token=>(await call({action:'preview',token})).html,prepare:()=>call({action:'health'}),reset:()=>abort('بدأت جلسة محرك جديدة.')};
 })();

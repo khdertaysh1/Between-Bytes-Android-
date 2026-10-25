@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "0.1.0",
+  "version": "0.3.0",
   "title": "Between Bytes Academy",
   "assessment": "guided-self-study",
   "labs": [
@@ -3154,6 +3154,400 @@
           ],
           "answer": 1,
           "explanation": "استخدم قالباً ثابتاً ومدخلات كبيانات فقط."
+        }
+      ]
+    },
+    {
+      "id": "jwt",
+      "title": "JWT والتحقق من الرموز",
+      "en": "JWT verification",
+      "icon": "◉",
+      "minutes": 18,
+      "xp": 150,
+      "summary": "الخدمة تتجاوز قاعدة algorithm عند قراءة JWT.",
+      "cases": [
+        {
+          "id": "jwt-none",
+          "title": "قبول خوارزمية none",
+          "story": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة algorithm عند قراءة JWT.",
+          "cause": "الخدمة تتجاوز قاعدة algorithm عند قراءة JWT.",
+          "fix": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+          "interpretation": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+          "normal": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+          },
+          "attack": {
+            "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ."
+          },
+          "bad_code": "claims = decode_without_enforcing_algorithm(token)",
+          "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)"
+        },
+        {
+          "id": "jwt-signature",
+          "title": "قراءة رمز بلا تحقق توقيع",
+          "story": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة signature عند قراءة JWT.",
+          "cause": "الخدمة تتجاوز قاعدة signature عند قراءة JWT.",
+          "fix": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+          "interpretation": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+          "normal": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+          },
+          "attack": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.invalid-signature"
+          },
+          "bad_code": "claims = decode_without_enforcing_signature(token)",
+          "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)"
+        },
+        {
+          "id": "jwt-expiry",
+          "title": "رمز منتهي الصلاحية",
+          "story": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة expiry عند قراءة JWT.",
+          "cause": "الخدمة تتجاوز قاعدة expiry عند قراءة JWT.",
+          "fix": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+          "interpretation": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+          "normal": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+          },
+          "attack": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoxOTk5OTk5OTk5fQ.moXM8jbDeO1r17GuugwRmlMfM1i_GH-96FPzo2zqqIA"
+          },
+          "bad_code": "claims = decode_without_enforcing_expiry(token)",
+          "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)"
+        },
+        {
+          "id": "jwt-audience",
+          "title": "رمز مخصص لخدمة أخرى",
+          "story": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة audience عند قراءة JWT.",
+          "cause": "الخدمة تتجاوز قاعدة audience عند قراءة JWT.",
+          "fix": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+          "interpretation": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+          "normal": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+          },
+          "attack": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJiaWxsaW5nIiwicHVycG9zZSI6ImFjY2VzcyIsImV4cCI6MjAwMDAwMzYwMH0.urd7L2RQhXd03PjwHoWxYjm0wTVH2JScESaZ00dPaXk"
+          },
+          "bad_code": "claims = decode_without_enforcing_audience(token)",
+          "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)"
+        },
+        {
+          "id": "jwt-issuer",
+          "title": "جهة إصدار غير موثوقة",
+          "story": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة issuer عند قراءة JWT.",
+          "cause": "الخدمة تتجاوز قاعدة issuer عند قراءة JWT.",
+          "fix": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+          "interpretation": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+          "normal": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+          },
+          "attack": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6InVudHJ1c3RlZCIsImF1ZCI6ImNsYXNzcm9vbSIsInB1cnBvc2UiOiJhY2Nlc3MiLCJleHAiOjIwMDAwMDM2MDB9.1nM9BZ0ftMf_hnTmY9CpUC9NRoPLcVVkLWlbrixq2Iw"
+          },
+          "bad_code": "claims = decode_without_enforcing_issuer(token)",
+          "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)"
+        },
+        {
+          "id": "jwt-purpose",
+          "title": "رمز استعادة بدل رمز وصول",
+          "story": "أنت تختبر خدمة Northstar محلية. الخدمة تتجاوز قاعدة purpose عند قراءة JWT.",
+          "cause": "الخدمة تتجاوز قاعدة purpose عند قراءة JWT.",
+          "fix": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+          "interpretation": "افحص checks_trace: هل ظهرت قاعدة مرفوضة مع authorized=true؟ المُصلحة تعيد 401 وتحجب private_profile. الرمز السليم يبقى مقبولاً. التوقيع HMAC فعلي والوقت ثابت للتجربة.",
+          "normal": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAzNjAwfQ.lj_ddmZvqtujduah3j-NvuFptVbkC0Wnsfjm6no0Ucw"
+          },
+          "attack": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGljZSIsImlzcyI6ImFjYWRlbXkiLCJhdWQiOiJjbGFzc3Jvb20iLCJwdXJwb3NlIjoicGFzc3dvcmQtcmVzZXQiLCJleHAiOjIwMDAwMDM2MDB9.BZ8RCcKfuM8B5-kheg2B6FB6-umBGyxY70yI7XTFzps"
+          },
+          "bad_code": "claims = decode_without_enforcing_purpose(token)",
+          "fixed_code": "claims = verify_all_required_rules(token, trusted_key, server_clock)"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "jwt-none-fix",
+          "caseId": "jwt-none",
+          "prompt": "ما المعالجة الأنسب لحالة «قبول خوارزمية none»؟",
+          "options": [
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+          ],
+          "answer": 2,
+          "explanation": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+        },
+        {
+          "id": "jwt-signature-fix",
+          "caseId": "jwt-signature",
+          "prompt": "ما المعالجة الأنسب لحالة «قراءة رمز بلا تحقق توقيع»؟",
+          "options": [
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر."
+          ],
+          "answer": 1,
+          "explanation": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+        },
+        {
+          "id": "jwt-expiry-fix",
+          "caseId": "jwt-expiry",
+          "prompt": "ما المعالجة الأنسب لحالة «رمز منتهي الصلاحية»؟",
+          "options": [
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر."
+          ],
+          "answer": 1,
+          "explanation": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+        },
+        {
+          "id": "jwt-audience-fix",
+          "caseId": "jwt-audience",
+          "prompt": "ما المعالجة الأنسب لحالة «رمز مخصص لخدمة أخرى»؟",
+          "options": [
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم."
+          ],
+          "answer": 1,
+          "explanation": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+        },
+        {
+          "id": "jwt-issuer-fix",
+          "caseId": "jwt-issuer",
+          "prompt": "ما المعالجة الأنسب لحالة «جهة إصدار غير موثوقة»؟",
+          "options": [
+            "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم."
+          ],
+          "answer": 0,
+          "explanation": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+        },
+        {
+          "id": "jwt-purpose-fix",
+          "caseId": "jwt-purpose",
+          "prompt": "ما المعالجة الأنسب لحالة «رمز استعادة بدل رمز وصول»؟",
+          "options": [
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+          ],
+          "answer": 2,
+          "explanation": "تحقق من التوقيع والخوارزمية والوقت والجهة والجمهور والغرض على الخادم. المفتاح هنا معلن للتدريب فقط."
+        }
+      ]
+    },
+    {
+      "id": "assignment",
+      "title": "حقول API الحساسة",
+      "en": "Mass assignment",
+      "icon": "⊞",
+      "minutes": 18,
+      "xp": 150,
+      "summary": "تحديث الملف يقبل الحقل الحساس role من العميل.",
+      "cases": [
+        {
+          "id": "assignment-role",
+          "title": "الدور الإداري",
+          "story": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس role من العميل.",
+          "cause": "تحديث الملف يقبل الحقل الحساس role من العميل.",
+          "fix": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+          "interpretation": "أضف role داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+          "normal": {
+            "patch": {
+              "display_name": "Alice Learner"
+            }
+          },
+          "attack": {
+            "patch": {
+              "display_name": "Alice Learner",
+              "role": "admin"
+            }
+          },
+          "bad_code": "profile.update(body[\"patch\"])",
+          "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})"
+        },
+        {
+          "id": "assignment-verified",
+          "title": "تأكيد البريد",
+          "story": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس email_verified من العميل.",
+          "cause": "تحديث الملف يقبل الحقل الحساس email_verified من العميل.",
+          "fix": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+          "interpretation": "أضف email_verified داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+          "normal": {
+            "patch": {
+              "display_name": "Alice Learner"
+            }
+          },
+          "attack": {
+            "patch": {
+              "display_name": "Alice Learner",
+              "email_verified": true
+            }
+          },
+          "bad_code": "profile.update(body[\"patch\"])",
+          "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})"
+        },
+        {
+          "id": "assignment-balance",
+          "title": "الرصيد المالي",
+          "story": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس credit من العميل.",
+          "cause": "تحديث الملف يقبل الحقل الحساس credit من العميل.",
+          "fix": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+          "interpretation": "أضف credit داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+          "normal": {
+            "patch": {
+              "display_name": "Alice Learner"
+            }
+          },
+          "attack": {
+            "patch": {
+              "display_name": "Alice Learner",
+              "credit": 100000
+            }
+          },
+          "bad_code": "profile.update(body[\"patch\"])",
+          "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})"
+        },
+        {
+          "id": "assignment-tenant",
+          "title": "المؤسسة",
+          "story": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس tenant من العميل.",
+          "cause": "تحديث الملف يقبل الحقل الحساس tenant من العميل.",
+          "fix": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+          "interpretation": "أضف tenant داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+          "normal": {
+            "patch": {
+              "display_name": "Alice Learner"
+            }
+          },
+          "attack": {
+            "patch": {
+              "display_name": "Alice Learner",
+              "tenant": "south"
+            }
+          },
+          "bad_code": "profile.update(body[\"patch\"])",
+          "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})"
+        },
+        {
+          "id": "assignment-owner",
+          "title": "مالك الحساب",
+          "story": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس owner من العميل.",
+          "cause": "تحديث الملف يقبل الحقل الحساس owner من العميل.",
+          "fix": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+          "interpretation": "أضف owner داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+          "normal": {
+            "patch": {
+              "display_name": "Alice Learner"
+            }
+          },
+          "attack": {
+            "patch": {
+              "display_name": "Alice Learner",
+              "owner": "bob"
+            }
+          },
+          "bad_code": "profile.update(body[\"patch\"])",
+          "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})"
+        },
+        {
+          "id": "assignment-nested",
+          "title": "صلاحية متداخلة",
+          "story": "أنت تختبر خدمة Northstar محلية. تحديث الملف يقبل الحقل الحساس permissions من العميل.",
+          "cause": "تحديث الملف يقبل الحقل الحساس permissions من العميل.",
+          "fix": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+          "interpretation": "أضف permissions داخل patch ثم قارن before وafter. الضعيفة تحفظ القيمة الحساسة؛ المُصلحة تعيد 403 دون تغيير السجل. إرسال display_name وحده ينجح.",
+          "normal": {
+            "patch": {
+              "display_name": "Alice Learner"
+            }
+          },
+          "attack": {
+            "patch": {
+              "display_name": "Alice Learner",
+              "permissions": {
+                "export": true
+              }
+            }
+          },
+          "bad_code": "profile.update(body[\"patch\"])",
+          "fixed_code": "require_allowed_patch(body[\"patch\"], allowed={\"display_name\"})"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "assignment-role-fix",
+          "caseId": "assignment-role",
+          "prompt": "ما المعالجة الأنسب لحالة «الدور الإداري»؟",
+          "options": [
+            "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر."
+          ],
+          "answer": 0,
+          "explanation": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
+        },
+        {
+          "id": "assignment-verified-fix",
+          "caseId": "assignment-verified",
+          "prompt": "ما المعالجة الأنسب لحالة «تأكيد البريد»؟",
+          "options": [
+            "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر."
+          ],
+          "answer": 0,
+          "explanation": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
+        },
+        {
+          "id": "assignment-balance-fix",
+          "caseId": "assignment-balance",
+          "prompt": "ما المعالجة الأنسب لحالة «الرصيد المالي»؟",
+          "options": [
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
+          ],
+          "answer": 2,
+          "explanation": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
+        },
+        {
+          "id": "assignment-tenant-fix",
+          "caseId": "assignment-tenant",
+          "prompt": "ما المعالجة الأنسب لحالة «المؤسسة»؟",
+          "options": [
+            "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم."
+          ],
+          "answer": 0,
+          "explanation": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
+        },
+        {
+          "id": "assignment-owner-fix",
+          "caseId": "assignment-owner",
+          "prompt": "ما المعالجة الأنسب لحالة «مالك الحساب»؟",
+          "options": [
+            "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة.",
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم."
+          ],
+          "answer": 0,
+          "explanation": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
+        },
+        {
+          "id": "assignment-nested-fix",
+          "caseId": "assignment-nested",
+          "prompt": "ما المعالجة الأنسب لحالة «صلاحية متداخلة»؟",
+          "options": [
+            "الاعتماد على رمز 200 وحده لإثبات الأثر.",
+            "إخفاء الزر في الواجهة دون تعديل تحقق الخادم.",
+            "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
+          ],
+          "answer": 2,
+          "explanation": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
         }
       ]
     }

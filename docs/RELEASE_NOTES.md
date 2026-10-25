@@ -1,9 +1,10 @@
-Between Bytes Academy 0.2.0 — hands-on practice restored.
+Between Bytes Academy 0.3.0 — practical learning and mobile workspace improvements.
 
-- The original Web Labs workspace and all 96 cases are bundled: editable fields, virtual HTTP editor, request history/replay/comparison, codecs, business readback and evidence export.
-- Runs the original Python engines and real in-memory SQLite inside a dedicated Web Worker. Runtime files are included in the APK, without a CDN or Termux dependency.
-- XSS previews use isolated sandbox frames; CSRF/CORS/SSRF transport remains explicitly modeled, with no external transport.
-- Native lesson/progress screens are retained. All practical rooms are immediately open.
-- Local-study website is built for GitHub Pages, without a ChatGPT account requirement.
+- 15 hands-on labs / 108 cases; six real-HMAC JWT lessons and six stateful mass-assignment lessons.
+- Per-case local drafts and notes, resume last case, unfinished filter and three-step evidence progress.
+- JWT decoder clearly marked unverified; token validation traces and profile before/after data.
+- Cache-first static/runtime assets, explicit engine preparation and offline-cache status.
+- Shared native lessons/quizzes include new labs; WebView loading feedback and renderer-failure handling.
+- Original virtual HTTP workspace, history/replay/diff, SQLite and sandboxed XSS remain available.
 
-Debug-signed testing build, Android 8+. Requires a sufficiently current Android System WebView to execute the bundled WebAssembly runtime. Replacing 0.1 may require removing the earlier debug-signed package; uninstalling clears its local progress.
+Testing build, Android 8+, current Android System WebView required. Debug signing may differ from earlier versions: uninstalling an old package may be needed and removes its local progress. Engine and evidence are session-scoped; drafts/notes remain on the device. Accounts/cloud synchronization are not hosted. CSRF/CORS/SSRF remain closed policy models with no external transport. JWT key is public for training, never for production.

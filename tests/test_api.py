@@ -45,7 +45,7 @@ class AcademyTests(unittest.TestCase):
  def test_all_modules_can_be_completed_sequentially(self):
   with s.connect() as c:
    for i in range(len(s.LABS)):self.assertTrue(s.attempt(c,self.uid,self.submission(i))['passed'])
-   self.assertEqual(s.profile(c,self.uid)['xp'],2100)
+   self.assertEqual(s.profile(c,self.uid)['xp'],150*len(s.LABS))
  def test_offline_replay_does_not_create_historical_streak(self):
   with s.connect() as c:
    a=self.submission();a['day']='2020-01-01';r=s.attempt(c,self.uid,a)
