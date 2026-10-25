@@ -1,0 +1,12 @@
+import {cp,mkdir,readFile,readdir,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..');
+const runtime=path.join(root,'web/vendor/pyodide');await mkdir(runtime,{recursive:true});
+for(const file of ['pyodide.mjs','pyodide.asm.mjs','pyodide.asm.wasm','python_stdlib.zip','pyodide-lock.json'])await cp(path.join(root,'node_modules/pyodide',file),path.join(runtime,file));
+const source=path.join(root,'web');const output=path.join(root,'app/src/main/assets/web');
+await mkdir(output,{recursive:true});
+for(const file of await readdir(source))await cp(path.join(source,file),path.join(output,file),{recursive:true});
+const manifest={runtime:'pyodide@314.0.7',engineSource:'khdertaysh1/Between-Bytes-Web-Labs@c396c90f2e7ed080f71368ce9edb5cd630098b09',transport:'in-browser Python + SQLite; policy fixtures; opaque sandbox XSS frames'};
+await writeFile(path.join(source,'engine/runtime-info.json'),JSON.stringify(manifest,null,2));
+await cp(path.join(source,'engine/runtime-info.json'),path.join(output,'engine/runtime-info.json'));
+console.log('Bundled the original Python lab engines and self-hosted WASM runtime for web + Android.');

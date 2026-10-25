@@ -1,0 +1,5 @@
+{
+  "runtime": "pyodide@314.0.7",
+  "engineSource": "khdertaysh1/Between-Bytes-Web-Labs@c396c90f2e7ed080f71368ce9edb5cd630098b09",
+  "transport": "in-browser Python + SQLite; policy fixtures; opaque sandbox XSS frames"
+}
