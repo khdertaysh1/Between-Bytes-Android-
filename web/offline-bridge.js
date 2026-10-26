@@ -4,7 +4,7 @@ window.BBEngine=(()=>{
  let worker=null,serial=0;const requests=new Map();
  const status=(message,phase='loading')=>{document.documentElement.dataset.runtimeState=phase;const target=document.getElementById('runtime-status');if(target){target.hidden=phase==='ready'||phase==='idle';target.textContent=message;target.dataset.phase=phase;}};
  function abort(message){worker?.terminate();worker=null;for(const item of requests.values()){clearTimeout(item.timer);item.reject(Error(message));}requests.clear();status(message+' أعد إرسال الطلب للمحاولة من جديد.','error');}
- function ensure(){if(worker)return;status('تجهيز التجربة لأول تشغيل…');worker=new Worker(new URL('./engine-worker.js?v=web10.3',document.baseURI),{type:'module'});
+ function ensure(){if(worker)return;status('تجهيز التجربة لأول تشغيل…');worker=new Worker(new URL('./engine-worker.js?v=web11.0',document.baseURI),{type:'module'});
  const active=worker;worker.onmessage=({data})=>{if(worker!==active)return;if(data.type==='progress'){status('تجهيز التجربة لأول تشغيل…');return;}if(data.type==='ready'){status('','ready');return;}const item=requests.get(data.id);if(!item)return;requests.delete(data.id);clearTimeout(item.timer);if(data.error){item.reject(Error(data.error));if(data.startup)abort('تعذر تجهيز التجربة. تحقق من الاتصال ثم أعد المحاولة.');}else{status('','ready');item.resolve(data.data);}};
  worker.onerror=()=>{if(worker===active)abort('تعذر تشغيل محرك المختبر. تحقق من اكتمال التحميل أو تحديث Android System WebView.');};
  }
