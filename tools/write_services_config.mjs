@@ -1,0 +1,5 @@
+import {writeFile} from 'node:fs/promises';
+let apiBase='';
+if(process.env.ACADEMY_SERVICE_URL){const url=new URL(process.env.ACADEMY_SERVICE_URL);if(url.protocol!=='https:'||url.pathname!=='/'||url.username||url.password||url.search||url.hash)throw Error('ACADEMY_SERVICE_URL must be an HTTPS origin, without credentials or paths');const response=await fetch(url.origin+'/health',{signal:AbortSignal.timeout(15000)});const health=await response.json();if(!response.ok||health.configured!==true||health.service!=='Between Bytes Academy')throw Error('Academy API is not ready; keep the existing public deployment');apiBase=url.origin;}
+await writeFile(new URL('../web/services-config.js',import.meta.url),'// Public address only. Secrets stay on the server.\nwindow.BBServices=Object.freeze('+JSON.stringify({apiBase,version:'0.9.0'})+');\n');
+console.log(apiBase?'Connected public service configuration verified.':'Cloud service not connected: intake remains explicitly unavailable; GitHub fallback retained.');

@@ -1,0 +1,27 @@
+name: Deploy private Academy feedback and analytics service
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: academy-service
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:services
+      - name: Deploy verified Worker and apply D1 migrations
+        run: npm run deploy:services
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          ACADEMY_D1_DATABASE_ID: ${{ vars.ACADEMY_D1_DATABASE_ID }}
+          ACADEMY_SERVICE_URL: ${{ vars.ACADEMY_SERVICE_URL }}
+          ACADEMY_ADMIN_KEY: ${{ secrets.ACADEMY_ADMIN_KEY }}
+          ACADEMY_RATE_SALT: ${{ secrets.ACADEMY_RATE_SALT }}

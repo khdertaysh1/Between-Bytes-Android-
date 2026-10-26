@@ -49,6 +49,12 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund && npm run prepare:practice
       - name: Verify all original non-browser engine invariants
         run: npm run test:wasm
+      - name: Verify feedback and dashboard service contracts
+        run: npm run test:services
+      - name: Connect configured Academy service
+        run: node tools/write_services_config.mjs
+        env:
+          ACADEMY_SERVICE_URL: ${{ vars.ACADEMY_SERVICE_URL || 'https://between-bytes-android.khdertayshoori011.workers.dev' }}
       - name: Validate public web scripts
         run: |
           node --check web/app.js
@@ -57,6 +63,9 @@ jobs:
           node --check web/result-view.js
           node --check web/experience.js
           node --check web/feedback.js
+          node --check web/services.js
+          node --check web/telemetry.js
+          node --check web/admin-launcher.js
           node --check web/lab-tools.js
           node --check web/learning.js
           node --check web/code-worker.js
