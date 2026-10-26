@@ -1,7 +1,7 @@
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id),client=window.BBServiceClient;
- let token='',product=null,orders=[],cart=0,pending=null,lastRequest=null,uncertain=false,busy=false,ready=false,epoch=0,view='/store',trail=[],index=-1,network=[];
+ let token='',product=null,orders=[],cart=0,pending=null,lastRequest=null,uncertain=false,busy=false,ready=false,connecting=false,epoch=0,view='/store',trail=[],index=-1,network=[];
  const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n/100);
  const modeLabel=mode=>mode==='fixed'?'بعد الإصلاح':'تحتوي على مشكلة';
  const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
@@ -30,7 +30,7 @@
   if(!validPath(path))path='/store';view=path;const stamp=++epoch;
   if(push){trail=trail.slice(0,index+1);trail.push(path);index=trail.length-1;}
   routeButtons();$('live-location').textContent='https://northstar.test'+path;window.history.replaceState(null,'','#'+path);
-  if(!ready){$('live-page').replaceChildren(node('div','جارٍ قراءة بيانات التطبيق من السيرفر…','live-loading'));return;}
+  if(!ready){$('live-page').replaceChildren(node('div','جارٍ قراءة بيانات التطبيق من السيرفر…','live-loading'));if(!connecting)connect();return;}
   const remote=path==='/store'||path==='/courses/web-security'||path.startsWith('/orders');
   if(remote)$('live-page').replaceChildren(node('div','جارٍ تحميل الصفحة من بيانات السيرفر…','live-loading'));
   try{if(path.startsWith('/orders'))await loadOrders();else if(remote)product=await api('catalog');if(stamp!==epoch)return;render();}
@@ -67,7 +67,7 @@
   finally{busy=false;toolsState();if(view==='/cart')render();}
  }
  $('tool-intercept').onclick=()=>tool('intercept');$('tool-network').onclick=()=>tool('network');$('tool-source').onclick=()=>tool('source');
- $('live-home').onclick=()=>visit('/store');$('store-brand').onclick=e=>{e.preventDefault();visit('/store');};$('store-products').onclick=()=>visit('/store');$('store-orders').onclick=()=>visit('/orders');$('store-cart').onclick=()=>visit('/cart');$('live-reload').onclick=()=>visit(view,false);
+ $('live-home').onclick=()=>visit('/store');$('store-brand').onclick=e=>{e.preventDefault();visit('/store');};$('store-products').onclick=()=>visit('/store');$('store-orders').onclick=()=>visit('/orders');$('store-cart').onclick=()=>visit('/cart');$('live-reload').onclick=()=>ready?visit(view,false):connect();
  $('live-back').onclick=()=>{if(index>0){index--;visit(trail[index],false);}};$('live-forward').onclick=()=>{if(index<trail.length-1){index++;visit(trail[index],false);}};
  $('live-send').onclick=()=>{try{const input=readPending();execute(input);}catch(error){$('live-error').textContent=error.message;}};
  $('live-cancel').onclick=()=>{pending=null;$('intercept-state').textContent='أُلغي الاعتراض؛ لم يُرسل الطلب.';toolsState();if(view==='/cart')render();};
@@ -75,5 +75,6 @@
  $('live-retry').onclick=()=>{if(lastRequest)execute(JSON.parse(JSON.stringify(lastRequest)));};
  $('live-mode').onchange=()=>{pending=null;$('intercept-state').textContent='تغيّرت نسخة التطبيق. أنشئ عملية جديدة من السلة.';$('live-error').textContent='';toolsState();status('الطلبات السابقة تحتفظ بنسخة منطقها؛ الطلب الجديد يستخدم '+modeLabel($('live-mode').value)+'.');if(view==='/cart')render();};
  $('live-guide-open').onclick=()=>$('live-guide').showModal();$('live-guide-close').onclick=()=>$('live-guide').close();$('guide-start').onclick=()=>{$('live-guide').close();visit('/store');};
- (async()=>{try{try{token=sessionStorage.getItem('bb-live-session')||'';}catch{}if(token)try{product=await api('catalog');}catch(error){if(error.status!==401)throw error;token='';}if(!token){token=(await api('session',{})).token;try{sessionStorage.setItem('bb-live-session',token);}catch{}}if(!product)product=await api('catalog');ready=true;$('live-connection').textContent='متصل بالسيرفر';status('جاهز · تصفّح المتجر وأنشئ طلباً من السلة.');const path=location.hash.slice(1)||'/store';await visit(path);toolsState();}catch(error){$('live-connection').textContent='تعذّر الاتصال';status(error.message);$('live-page').replaceChildren(node('div',error.message,'live-empty'));}})();
+ async function connect(){if(connecting)return;connecting=true;status('جارٍ الاتصال بالسيرفر…');try{try{token=sessionStorage.getItem('bb-live-session')||'';}catch{}if(token)try{product=await api('catalog');}catch(error){if(error.status!==401)throw error;token='';}if(!token){token=(await api('session',{})).token;try{sessionStorage.setItem('bb-live-session',token);}catch{}}if(!product)product=await api('catalog');ready=true;$('live-connection').textContent='متصل بالسيرفر';status('جاهز · تصفّح المتجر وأنشئ طلباً من السلة.');const path=location.hash.slice(1)||'/store';await visit(path);toolsState();}catch(error){$('live-connection').textContent='تعذّر الاتصال';status(error.message);const box=node('div',undefined,'live-empty');box.append(node('p',error.message),action('إعادة الاتصال',connect));$('live-page').replaceChildren(box);}finally{connecting=false;}}
+ connect();
 })();
