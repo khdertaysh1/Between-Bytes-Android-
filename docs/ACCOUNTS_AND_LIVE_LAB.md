@@ -28,3 +28,9 @@ GET reads and view navigation never repeat POST operations. Request IDs remain a
 ## Verification
 
 `npm run test:services` covers password checks, session hashing/revocation/expiry, CORS, account isolation, progress validation/import separation, anonymous lab isolation, price repair, and retry idempotence. `npm run test:wasm` retains the complete 108-case local workflow tests. Browser QA also checks real HTTP price results and page navigation. No production learner account or real financial operation is created by the test suite.
+
+## Server browser workspace (0.12)
+
+The pilot now retains the academy's browser chrome and light application within the dark workspace. Store, product, cart, order list and invoice are navigable pages. Catalog and order pages read the API; the cart is explicitly a browser draft until confirmation. A receipt is shown only after a separate GET verifies its saved order, with totals and mode taken from that record. Browser navigation and reload issue reads only.
+
+The optional interceptor captures the actual application operation before POST. It edits the request body; it never edits server source. The network tool displays observed HTTP requests/status/duration and an operation/readback timeline, not invented server internals. Session tokens and Authorization headers never enter the visible log. Uncertain writes retain their operation ID for an explicit idempotent retry, instead of silently generating another purchase. The complete explanation remains available in the guide dialog.
