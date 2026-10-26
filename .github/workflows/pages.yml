@@ -50,7 +50,7 @@ jobs:
       - name: Verify all original non-browser engine invariants
         run: npm run test:wasm
       - name: Verify feedback and dashboard service contracts
-        run: npm run test:services
+        run: npm run test:services && npm run test:navigation
       - name: Connect configured Academy service
         run: node tools/write_services_config.mjs
         env:

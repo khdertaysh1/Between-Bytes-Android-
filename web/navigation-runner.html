@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; worker-src blob:; connect-src 'none';">
+<script>
+// This opaque sandbox owns a disposable worker. CSP blocks network and imports.
+let worker=null,timer;
+addEventListener('message',event=>{
+ if(event.source!==parent||event.data?.type!=='execute')return;
+ worker?.terminate();clearTimeout(timer);
+ const {id,source,requests}=event.data;
+ const program=`self.onmessage=({data})=>{
+  try {
+   if(data.source.length>16000||data.requests.length>20)throw Error('Input limit exceeded');
+   const fn=new Function('request','trace', '"use strict";\\n'+data.source);
+   const results=data.requests.map(request=>{
+    const trace=[];
+    const log=(label,values)=>{if(trace.length<80)trace.push({label:String(label).slice(0,80),values:JSON.parse(JSON.stringify(values??null).slice(0,4000))});};
+    try {const result=fn(request,log);return {result:JSON.parse(JSON.stringify(result).slice(0,10000)),trace};}
+    catch(error){return {error:String(error.message).slice(0,500),trace};}
+   });
+   self.postMessage({results});
+  }catch(error){self.postMessage({error:String(error.message).slice(0,500)});}
+ };`;
+ const url=URL.createObjectURL(new Blob([program],{type:'text/javascript'}));
+ worker=new Worker(url);URL.revokeObjectURL(url);
+ const finish=value=>{clearTimeout(timer);worker?.terminate();worker=null;parent.postMessage({type:'execution',id,...value},'*');};
+ worker.onmessage=e=>finish(e.data);
+ worker.onerror=()=>finish({error:'تعذر تنفيذ الكود؛ راجع الصياغة.'});
+ timer=setTimeout(()=>finish({error:'أُوقف التنفيذ بعد ثانيتين. راجع الحلقات.'}),2000);
+ worker.postMessage({source,requests});
+});
+parent.postMessage({type:'runner-ready'},'*');
+</script>

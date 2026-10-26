@@ -7,7 +7,8 @@
     "test:wasm": "node --test tests/engine_wasm.test.mjs tests/offline_cache.test.mjs tests/workspace_ui.test.mjs tests/learning.test.mjs tests/lab_tools.test.mjs",
     "dev": "node tools/dev_services.mjs",
     "test:services": "node --test tests/services_worker.test.mjs tests/services_ui.test.mjs",
-    "deploy:services": "node tools/deploy_services.mjs"
+    "deploy:services": "node tools/deploy_services.mjs",
+    "test:navigation": "node --test tests/navigation_model.test.mjs"
   },
   "dependencies": {
     "pyodide": "314.0.7"
