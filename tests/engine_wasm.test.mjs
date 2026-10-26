@@ -91,3 +91,11 @@ test('redirect parsing accepts learner-created destinations and each weak rule d
   if(id!=='code-redirect')assert.equal(call('vulnerable','https://untrusted.test/direct').status,403,id+' distinct weak check');
  }
 });
+test('redirect origin classification handles protocol/default ports and fixed traces contain only the policy actually executed',()=>{
+ const call=(mode,next)=>invoke({path:'/academy/api/redirect/code-redirect/'+mode,method:'POST',input:{next}});
+ assert.equal(call('vulnerable','http://app.lab/account').body.data.external,true);
+ assert.equal(call('vulnerable','https://app.lab:443/account').body.data.external,false);
+ assert.equal(call('vulnerable','https://APP.LAB/account').body.data.external,false);
+ assert.equal(call('vulnerable','https://app.lab:0/account').body.data.external,true);
+ for(const next of ['/account','https://outside.example/landing']){const r=call('fixed',next);assert.ok(r.body.data.trace.some(e=>e.step==='fixed validation'));assert.equal(r.body.data.trace.some(e=>e.step==='weak validation'),false);}
+});
