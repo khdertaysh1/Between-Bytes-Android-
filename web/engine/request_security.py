@@ -3,7 +3,7 @@
 Origin, cookie and DNS fields are fixture inputs, not browser-controlled headers.
 CORS readability is an explicit policy model, not evidence from a real browser.
 """
-from urllib.parse import urlsplit, unquote, parse_qs
+from urllib.parse import urlsplit, urljoin, unquote, parse_qs
 
 GROUPS = {'ssrf', 'csrf', 'cors', 'redirect'}
 APP = 'https://app.lab'
@@ -62,6 +62,14 @@ REDIRECT_ATTACKS={
 
 def redirect(case,fixed,d):
     raw=string(d,'next')
+    if fixed:
+        safe=raw in {'/account','/welcome'}
+        checks=[{'step':'fixed validation','rule':'exact allowed relative route','allowed':safe},
+                {'step':'final policy','allowed':safe,'fixed':True}]
+        data={'submitted':raw,'destination':raw if safe else None,'external':False,
+              'navigation_performed':False,'policy_allowed':safe,'trace':checks,
+              'model':'local policy decision; UI navigation is simulated; no external transport'}
+        return outcome(200 if safe else 403,data,False,not safe,safe)
     # The weak checks deliberately run at different trust boundaries. Inputs are
     # parsed, not compared against the attack fixture. No destination is fetched.
     parsed=urlsplit(raw)
@@ -81,7 +89,10 @@ def redirect(case,fixed,d):
         if nested:destination=nested[0].replace('\\','/')
         checks.append({'step':'nested destination','destination':destination})
     target=urlsplit(destination)
-    external=bool(target.netloc and target.netloc!='app.lab' or target.scheme and target.scheme not in {'http','https'})
+    resolved=urlsplit(urljoin(APP+'/',destination))
+    port=resolved.port
+    if port is None:port=443 if resolved.scheme.lower()=='https' else 80
+    external=(resolved.scheme.lower(),resolved.hostname,port)!=('https','app.lab',443)
     safe=raw in {'/account','/welcome'}
     accepted=safe if fixed else allowed
     checks.append({'step':'final policy','allowed':accepted,'fixed':fixed})

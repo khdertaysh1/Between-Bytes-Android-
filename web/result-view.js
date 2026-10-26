@@ -24,7 +24,7 @@ window.BBResultView=(()=>{
  }
  function draw(out,r,row,lang){
   out.hidden=false;out.replaceChildren();out.dataset.mode=r.mode;out.dataset.case=row.id;out.dataset.state=state(r);
-  const head=element('div',undefined,'result-heading');head.append(element('span',r.mode==='fixed'?tx(lang,'النسخة المُصلحة','Fixed variant'):tx(lang,'النسخة الضعيفة','Vulnerable variant'),'variant-tag'),element('span','HTTP '+(r.http_status??r.status),'http-chip'));out.append(head,element('h3',verdict(r,lang),'result-verdict'));
+  const head=element('div',undefined,'result-heading');head.append(element('span',r.mode==='fixed'?tx(lang,'النسخة بعد الإصلاح','After repair'):tx(lang,'النسخة التي تحتوي على مشكلة','Contains an issue'),'variant-tag'),element('span','HTTP '+(r.http_status??r.status),'http-chip'));out.append(head,element('h3',verdict(r,lang),'result-verdict'));
   const content=element('div',undefined,'result-content');content.append(element('h4',names[row.group][lang==='ar'?0:1]));
   if(r.preview){content.append(element('p',r.browser?verdict(r,lang):tx(lang,'تُعرض الحمولة في الإطار أدناه. قد يتشابه الشكل مع اختلاف التنفيذ؛ راقب دليل المتصفح.','The payload renders below. Appearance may match while execution differs; inspect browser evidence.')));}
   else content.append(valueTree(payload(r),lang));
@@ -32,7 +32,7 @@ window.BBResultView=(()=>{
  }
  function compare(out,pair,row,lang){
   out.replaceChildren();if(!pair.vulnerable&&!pair.fixed){out.hidden=true;return;}out.hidden=false;out.append(element('h3',tx(lang,'مقارنة لنفس جسم الطلب','Same request body comparison')),element('p',tx(lang,'نتائج إرسال فعلية؛ لكل نسخة حالة مستقلة. المقارنة تخص جسم JSON الحالي، وليست تشابه الشكل أو رمز HTTP فقط.','Actual submissions with independent variant state. Matches the current JSON body; compare data and behavior, not appearance or HTTP alone.'),'comparison-note'));
-  const grid=element('div',undefined,'variant-comparison');for(const mode of ['vulnerable','fixed']){const card=element('article');card.dataset.comparisonMode=mode;const r=pair[mode];if(r)draw(card,r,row,lang);else card.append(element('h4',mode==='fixed'?tx(lang,'المُصلحة','Fixed'):tx(lang,'الضعيفة','Vulnerable')),element('p',tx(lang,'لم يُرسل هذا الجسم لهذه النسخة في الجولة الحالية','This body has not been sent to this variant in the current round')));grid.append(card);}out.append(grid);
+  const grid=element('div',undefined,'variant-comparison');for(const mode of ['vulnerable','fixed']){const card=element('article');card.dataset.comparisonMode=mode;const r=pair[mode];if(r)draw(card,r,row,lang);else card.append(element('h4',mode==='fixed'?tx(lang,'بعد الإصلاح','After repair'):tx(lang,'التي تحتوي على مشكلة','Contains an issue')),element('p',tx(lang,'لم يُرسل هذا الجسم لهذه النسخة في الجولة الحالية','This body has not been sent to this variant in the current round')));grid.append(card);}out.append(grid);
  }
  return {draw,compare,verdict};
 })();

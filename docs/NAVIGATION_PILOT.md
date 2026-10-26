@@ -36,3 +36,15 @@ The pilot now includes an expanded Arabic lesson and a five-step practical walkt
 Execution flow is built from each recorded attempt's trace events, in execution order, with clickable steps, Arabic explanations, and a response outcome. Encoded cases also record the extra decoding step, so the weak and fixed order can be compared. This remains explicit instrumentation, not a general JavaScript debugger.
 
 The local browser now focuses on `next`, the actual destination origin/path, the expected origin, and the fixture policy. Decorative course progress has been removed. No external destination is contacted.
+
+### Application pages across all labs (web 0.10)
+
+All 108 cases retain their original engines and task-specific tools, and now mount a service-shaped application with home, detail, operation and result pages. Browser back/forward and refresh are view actions; they do not resubmit payments, uploads, account changes or rate-limit attempts. An explicit operation/interceptor submission is required to call the engine. Variant changes and failed submissions clear the current result so old data cannot be mistaken for a fresh response. The comparison tool retains clearly labelled historical submissions separately from the application's current page.
+
+The app remains visible alongside the selected inspector on wide screens and stacks above it on narrow screens. Result pages render actual returned documents, order state, search results, files, account data or policy decisions. XSS keeps its original opaque sandbox frame and observation messages. CSRF, CORS, SSRF and redirect transport remain local models; these page transitions do not create a production backend or a two-origin proof.
+
+Every case has an expanded scenario, cause, five practical steps, interpretation and repair principle. Source views show teaching snippets plus the actual bundled engine source. The Python learner editor transforms the request; it is explicitly separate from editing server logic. Recorded function paths and line explanations are based on interpreter events; line snapshots precede execution. Arabic mode labels are “تحتوي على مشكلة” and “بعد الإصلاح”; internal `vulnerable`/`fixed` API identifiers remain stable.
+
+The standalone JavaScript redirect workshop now includes academy, course, sign-in, account, settings and help pages, with functional local links and back/forward history. Only submitting its sign-in form or sending the HTTP request executes the editable redirect handler.
+
+Audit corrections: fixed redirect policy no longer runs or reports the weak validation branch; origin classification now distinguishes protocol changes and normalizes default ports. The original Termux repository and production Cloudflare settings are unchanged.
