@@ -54,7 +54,7 @@ jobs:
       - name: Connect configured Academy service
         run: node tools/write_services_config.mjs
         env:
-          ACADEMY_SERVICE_URL: ${{ vars.ACADEMY_SERVICE_URL }}
+          ACADEMY_SERVICE_URL: ${{ vars.ACADEMY_SERVICE_URL || 'https://between-bytes-android.khdertayshoori011.workers.dev' }}
       - name: Validate public web scripts
         run: |
           node --check web/app.js
