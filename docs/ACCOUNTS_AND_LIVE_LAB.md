@@ -15,7 +15,7 @@ Production `/health` advertises `version: "0.11"` and `capabilities.accounts` / 
 - Passwords: 12–128 characters, never stored plaintext or logged. Email normalized to lowercase. No email provider has been connected: email ownership verification and email password recovery are explicitly unavailable in the UI.
 - 256-bit opaque bearer sessions; SHA-256 token digests only in D1; seven-day server expiry; revoke on logout. The browser retains its token only in sessionStorage, so it works without third-party cookies and closing the tab ends local retention. Sandbox training content cannot access the academy origin. Do not add unsandboxed untrusted HTML to the account shell.
 - HTTPS production transport, allowlisted CORS, bounded JSON bodies, per-network and per-account login limits. Account creation currently discloses an unavailable email through its conflict response; do not represent this as enumeration-resistant authentication.
-- Progress reads/writes derive identity from the authenticated server session, never a supplied user ID. Logout and guest browsing stay separate. Sync merges additions; explicit per-case removal deletes only that account's mark. Existing feedback/admin authentication is unchanged.
+- Progress reads/writes derive identity from the authenticated server session, never a supplied user ID. Logout and guest browsing stay separate. Sync batches at most 25 marks per SQL statement to stay below the D1 Free query/parameter limits, including full 108-case accounts. Sync merges additions; explicit per-case removal deletes only that account's mark. Existing feedback/admin authentication is unchanged.
 
 ## Real server pilot
 

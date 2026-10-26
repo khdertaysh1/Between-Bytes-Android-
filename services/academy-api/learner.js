@@ -56,7 +56,11 @@ export async function learnerRoute(r,e,h){
    await rate(r,e,'progress',180,600);const d=await body(r,8192);
    if(!Array.isArray(d.completed)||d.completed.length>108||d.completed.some(id=>typeof id!=='string'||!Object.hasOwn(CASES,id)))fail(400,'Unknown progress case');
    const removed=d.removed||[];if(!Array.isArray(removed)||removed.length>108||removed.some(id=>typeof id!=='string'||!Object.hasOwn(CASES,id)))fail(400,'Unknown progress case');
-   const ids=[...new Set(d.completed)],statements=removed.map(id=>e.DB.prepare('DELETE FROM learner_progress WHERE user_id=? AND case_id=?').bind(s.user_id,id));statements.push(...ids.map(id=>e.DB.prepare('INSERT INTO learner_progress(user_id,case_id,updated_at) VALUES(?,?,?) ON CONFLICT(user_id,case_id) DO UPDATE SET updated_at=excluded.updated_at').bind(s.user_id,id,now())));if(statements.length)await e.DB.batch(statements);return json({saved:true});
+   const ids=[...new Set(d.completed)],deleted=[...new Set(removed)],statements=[],stamp=now();
+   // Bound query and parameter counts for the D1 Free plan, even at 108 marks.
+   for(let i=0;i<deleted.length;i+=25){const chunk=deleted.slice(i,i+25);statements.push(e.DB.prepare('DELETE FROM learner_progress WHERE user_id=? AND case_id IN ('+chunk.map(()=>'?').join(',')+')').bind(s.user_id,...chunk));}
+   for(let i=0;i<ids.length;i+=25){const chunk=ids.slice(i,i+25);statements.push(e.DB.prepare('INSERT INTO learner_progress(user_id,case_id,updated_at) VALUES '+chunk.map(()=>'(?,?,?)').join(',')+' ON CONFLICT(user_id,case_id) DO UPDATE SET updated_at=excluded.updated_at').bind(...chunk.flatMap(id=>[s.user_id,id,stamp])));}
+   if(statements.length)await e.DB.batch(statements);return json({saved:true});
   }
   if(p==='/v1/progress'&&r.method==='DELETE'){await e.DB.prepare('DELETE FROM learner_progress WHERE user_id=?').bind(s.user_id).run();return json({cleared:true});}
   fail(405,'Method not allowed');
