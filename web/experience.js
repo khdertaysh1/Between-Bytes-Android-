@@ -92,7 +92,7 @@ window.BBExperience=(()=>{
  };
  function spec(){return siteSpecs[row.group];}
  function pageAddress(view){if(view==='result'&&pageResult?.response_body?.data?.policy_allowed&&pageResult.response_body.data.destination){try{const u=new URL(pageResult.response_body.data.destination,'https://app.lab');if(['http:','https:'].includes(u.protocol))return u.href;}catch{}}
-  return 'https://northstar.test/'+(row.group==='redirect'?row.group+'/'+row.id:'')+spec().paths[['home','details','work','result'].indexOf(view)];}
+  return 'https://northstar.test'+(row.group==='redirect'?'/'+row.group+'/'+row.id:'')+spec().paths[['home','details','work','result'].indexOf(view)];}
  function mountPages(ui,banner,effect){
   pageView='home';pageTrail=['home'];pageIndex=0;pageResult=null;
   const formPage=el('section',undefined,'site-editor');formPage.id='site-editor';
