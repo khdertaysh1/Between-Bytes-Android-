@@ -16,7 +16,7 @@ const raw = incoming.searchParams.get('next') ?? '/account';
 trace('input', { raw });
 ${fixed?`// حل المرجع: حلّل الوجهة ثم افحص الأصل والمسارات النهائية المسموحة.
 let value = ${preparation};
-let target = new URL(value, base);
+${item.id==='redirect-encoded'?"trace('decoded', { raw, value });\n":''}let target = new URL(value, base);
 trace('parsed', { href: target.href, origin: target.origin });
 const allowed = target.origin === base &&
   !target.username && !target.password &&
@@ -27,7 +27,7 @@ return { status: 302, location: target.href };`:`const allowed = ${item.check};
 trace('validation', { allowed });
 if (!allowed) return { status: 403, body: 'Destination rejected' };
 let value = ${preparation};
-let target = new URL(value, base);
+${item.id==='redirect-encoded'?"trace('decoded', { raw, value });\n":''}let target = new URL(value, base);
 trace('parsed', { href: target.href, origin: target.origin });
 ${item.id==='redirect-nested'?`if (target.pathname === '/continue') {
   value = target.searchParams.get('next') ?? '/account';
