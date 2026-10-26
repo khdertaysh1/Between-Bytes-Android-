@@ -38,7 +38,7 @@ function showChecks(){
  renderMission();
  $('checks').replaceChildren();for(const [key,label] of [['weak_impact','weakCheck'],['fixed_rejects','fixedCheck'],['fixed_control','controlCheck']])$('checks').append(node('li',(checks[key]?'✓ ':'○ ')+t(label),checks[key]?'done':''));
  $('proof-note').textContent=t(current.id==='xss-url'?'urlNote':current.group==='xss'?'browserNote':['ssrf','csrf','cors','redirect'].includes(current.group)?'policySource':'serverNote');
- if(Object.values(checks).length===3&&Object.values(checks).every(Boolean)){marks[current.id]=true;save('bb-academy-marks-v1',marks);}
+ if(Object.values(checks).length===3&&Object.values(checks).every(Boolean)){window.BBTelemetry?.complete(current.id);marks[current.id]=true;save('bb-academy-marks-v1',marks);}
 }
 const oldRoutes={'idor':'access/acl-read','reflected-xss':'xss/xss-html','dom-xss':'xss/xss-dom-query','csrf':'csrf/csrf-missing','cors':'cors/cors-reflect','ssrf':'ssrf/code-ssrf','open-redirect':'redirect/code-redirect','rate-limit':'rate/rate-xff'};
 function historyReplace(hash){window.history.replaceState(null,'',hash);}
@@ -48,7 +48,7 @@ function route(preserve=false){
  const legacy=oldRoutes[location.hash.slice(1)];if(legacy)historyReplace('#/'+legacy);
 
  const parts=location.hash.slice(1).replace(/^\//,'').split('/');const id=parts[1]||parts[0];current=catalog.find(c=>c.id===id)||catalog.find(c=>c.group===id)||null;sequence++;preview=null;$('preview').hidden=true;$('preview').removeAttribute('src');$('preview').removeAttribute('srcdoc');history=[];checks={};browserChecks={};hint=0;
- $('overview').hidden=!!current;$('room').hidden=!current;if(!current){BBExperience.home();BBStudio.route(null,lang);renderCards();window.scrollTo(0,0);return;}
+ window.BBTelemetry?.view(current?.id||null);$('overview').hidden=!!current;$('room').hidden=!current;if(!current){BBExperience.home();BBStudio.route(null,lang);renderCards();window.scrollTo(0,0);return;}
  caseNavigation();$('state-note').hidden=current.group!=='payment';document.querySelector('.case-map').open=false;$('room-title').textContent=t('labPrefix')+' · '+t(current.group);$('case-title').textContent=current.title[lang];$('room-meta').textContent=t(current.group)+' / '+t(current.level)+' / '+current.id;
  $('scene').textContent=labCopy[current.group][lang==='ar'?0:1];$('case-story').textContent=current.lesson.story[lang];$('cause').textContent=current.cause[lang];$('interpretation').textContent=current.lesson.interpretation[lang];$('bad-code').textContent=current.lesson.bad_code;$('fixed-code').textContent=current.lesson.fixed_code;$('data-flow').replaceChildren(node('li',t('flowClient')+Object.keys(current.normal).join(', ')),node('li',t('flowService')),node('li',t(current.group==='payment'?'flowRead':current.group==='xss'?'flowBrowser':'flowResponse')));$('fix').textContent=current.fix[lang];$('app-title').textContent='Northstar '+({payment:'Checkout',access:'Workspace',rate:'Access',xss:'Preview',code:'Services',ssrf:'Link Preview',csrf:'Profile',cors:'Private API',redirect:'Navigation',upload:'Media',traversal:'Documents',disclosure:'Deployment',authentication:'Identity',jwt:'Token Inspector',assignment:'Profile API'}[current.group]);$('app-account').textContent=current.group==='access'?'alice · north':'alice@example.test';
  $('address').textContent='northstar.test / '+current.id;$('app-copy').textContent=current.group==='payment'?(lang==='ar'?'حساب العميل alice · الطلب order100':'Customer alice · order order100'):t('resultPurpose');$('source-note').textContent=['ssrf','csrf','cors','redirect'].includes(current.group)?t('policySource'):t(current.group==='xss'?'xssSource':'serverSource');
@@ -105,7 +105,7 @@ async function send(){
   const evidence=await fetch('/academy/evidence?'+new URLSearchParams({case:id,mode}));const result=await evidence.json();
   if(result.request_id!==wire.headers.get('x-request-id'))throw new Error('Evidence changed in another tab; send the request again.');
   if(ticket!==sequence||current?.id!==id)return;
-  result.http_status=wire.status;result.response_body=body;BBStudio.assessment(result);
+  window.BBTelemetry?.attempt(id,mode,wire.status);result.http_status=wire.status;result.response_body=body;BBStudio.assessment(result);
   if(current.group==='payment'&&mode==='vulnerable'&&result.impact)$('decision-note').textContent=t('weakAccepted');
   history.push({input,http:{path,method:'POST',status:wire.status,headers,body},assessment:result});history=history.slice(-30);
   if(current.group==='payment'){const data=await readback(mode);if(ticket!==sequence)return;if(data)checkoutSummary(data,body);}

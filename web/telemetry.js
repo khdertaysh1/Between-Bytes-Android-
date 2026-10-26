@@ -1,0 +1,23 @@
+'use strict';
+window.BBTelemetry=(()=>{
+ const preference='bb-analytics-choice-v1',sessionKey='bb-analytics-session-v1',client=window.BBServiceClient;
+ let consent=false,choice=null,session='',current='',viewKey=null,queue=[],inflight=false,lastInteraction=performance.now(),lastTick=performance.now(),active=0,completed=new Set(),timer;
+ try{choice=localStorage.getItem(preference);consent=choice==='allow';}catch{}
+ function id(){return client.uuid?client.uuid():crypto.randomUUID();}
+ function ensureSession(){if(session)return;try{session=sessionStorage.getItem(sessionKey)||id();sessionStorage.setItem(sessionKey,session);}catch{session=id();}}
+ function allowed(){return consent&&client?.configured;}
+ function add(kind,extra={}){if(!allowed())return;ensureSession();queue.push({id:id(),kind,case_id:current,...extra});if(queue.length>100)queue.shift();if(queue.length>=20)flush();}
+ function view(caseId){const next=caseId||'',key=next||'home';if(viewKey===key)return;settle();current=next;lastTick=performance.now();viewKey=key;add('view');}
+ function referrer(){try{const url=new URL(document.referrer);return url.origin===location.origin?'':url.hostname;}catch{return '';}}
+ async function flush(){if(!allowed()||inflight||!queue.length)return;inflight=true;const batch=queue.slice(0,20),sid=session;try{const receipt=await client.request('/v1/events',{session_id:sid,device:/Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop',referrer:referrer(),events:batch},{keepalive:true});if(receipt?.accepted!==true)throw Error('Missing receipt');if(session===sid)queue=queue.filter(e=>!batch.some(b=>b.id===e.id));}catch{}finally{inflight=false;}}
+ function tick(){const time=performance.now(),elapsed=Math.min(5,Math.max(0,(time-lastTick)/1000));lastTick=time;if(allowed()&&!document.hidden&&time-lastInteraction<60000)active+=elapsed;}
+ function settle(){if(active>=1){add('active',{seconds:Math.min(60,Math.floor(active))});active-=Math.floor(active);}}
+ function status(){const node=document.getElementById('privacy-status');if(node)node.textContent=!client?.configured?'خدمة الإحصاءات غير متصلة حالياً؛ لا يجري إرسال بيانات.':consent?'الإحصاءات مفعّلة بموافقتك على هذا المتصفح.':'الإحصاءات متوقفة. يمكنك التعلم دون تفعيلها.';}
+ function setConsent(value){consent=value;choice=value?'allow':'deny';try{localStorage.setItem(preference,choice);}catch{}document.getElementById('analytics-consent')?.remove();if(!value){queue=[];active=0;session='';viewKey=null;completed.clear();try{sessionStorage.removeItem(sessionKey);}catch{}}else{lastInteraction=performance.now();lastTick=performance.now();viewKey=null;view(current);}status();}
+ function mount(){status();document.getElementById('privacy-allow')?.addEventListener('click',()=>setConsent(true));document.getElementById('privacy-deny')?.addEventListener('click',()=>setConsent(false));if(client?.configured&&choice===null&&!document.getElementById('privacy-status')){const panel=document.createElement('section');panel.id='analytics-consent';panel.className='consent-panel';panel.setAttribute('aria-label','إحصاءات اختيارية');const p=document.createElement('p');p.textContent='بتسمح بإحصاءات اختيارية عن الزيارات وتفاعل المختبرات والوقت النشط؟ ما منرسل الأكواد أو قيم طلباتك، والمختبرات بتشتغل بدونها.';const actions=document.createElement('div');actions.className='studio-actions';for(const [label,value] of [['السماح',true],['بدون إحصاءات',false]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>setConsent(value);actions.append(b);}const link=document.createElement('a');link.href='./privacy.html';link.textContent='التفاصيل وتغيير الاختيار';actions.append(link);panel.append(p,actions);document.body.append(panel);}timer=setInterval(()=>{tick();if(active>=25){settle();flush();}},5000);}
+ for(const type of ['pointerdown','keydown','touchstart'])document.addEventListener(type,()=>lastInteraction=performance.now(),{passive:true});
+ document.addEventListener('visibilitychange',()=>{tick();if(document.hidden){settle();flush();}lastTick=performance.now();});window.addEventListener('pagehide',()=>{tick();settle();flush();clearInterval(timer);});
+ window.addEventListener('storage',event=>{if(event.key===preference)setConsent(event.newValue==='allow');});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+ return {view,attempt:(caseId,mode,httpStatus)=>{if(caseId!==current)return;add('attempt',{mode,http_status:httpStatus});},complete:caseId=>{if(!allowed()||completed.has(caseId))return;completed.add(caseId);add('complete',{case_id:caseId});},setConsent,flush};
+})();

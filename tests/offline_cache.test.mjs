@@ -35,3 +35,6 @@ test('updated entry points bypass old bare-URL caches and precache every referen
   for(const ref of refs.filter(x=>/\/(?:academy|studio|experience|feedback)\.(?:js|css)/.test(x)&&!x.includes('studio.css')&&!x.includes('academy.css')))assert.match(ref,/\?v=web[\w.]+$/,page+' cache invalidation '+ref);
  }
 });
+test('service connection configuration refreshes online rather than staying stuck on an unconfigured cached copy',async()=>{
+ const s=setup();s.entries.set('https://academy.test/course/services-config.js?v=web9',new Response('old unconfigured'));s.online();assert.equal(await(await s.request('services-config.js?v=web9')).text(),'downloaded');assert.equal(s.calls.length,1);
+});
