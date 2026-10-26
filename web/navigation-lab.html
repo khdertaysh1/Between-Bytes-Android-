@@ -4,6 +4,7 @@
 <div class="lab-intro"><div><p class="eyebrow">مختبر نموذجي · JavaScript قابل للتنفيذ</p><h1>تتبّع وجهة الطلب.</h1><p>تصفّح التطبيق، اعترض طلب الدخول، وعدّل منطق التحويل. أثبت أثر الخلل ثم اختبر إصلاحك.</p></div><span class="pill">Open Redirect · 6 حالات</span></div>
 <nav id="cases" aria-label="حالات المختبر"></nav>
 <div class="case-brief"><div><h2 id="case-name"></h2><p id="case-detail"></p></div><button id="new-round">إعادة الجولة</button></div>
+<section class="mission-card lesson-card" aria-labelledby="lesson-title"><p class="eyebrow">افهم التجربة قبل أن تبدأ</p><h2 id="lesson-title">ما هي ثغرة Open Redirect؟</h2><p>بعد تسجيل الدخول، يقرأ التطبيق معامل <code>next</code> ليعيد المستخدم إلى الصفحة التي يريدها. تظهر الثغرة عندما يستطيع شخص تغيير هذه القيمة فيجعل التطبيق الموثوق يوجّه المستخدم إلى موقع آخر. قد يُستعمل الرابط الموثوق كبداية لخداع المستخدم؛ التحويل وحده لا يعني سرقة جلسة أو تجاوز تسجيل الدخول.</p><p><strong>السلوك المطلوب هنا:</strong> السماح بصفحتي الحساب والترحيب على <code dir="ltr">https://app.lab</code>، ورفض الوجهات الأخرى. أنت تتحكم بقيمة <code>next</code> وبمنطق المعالج لتفهم الخلل وتجرّب إصلاحه.</p><h3>أين الخطأ في هذه الحالة؟</h3><p id="case-lesson"></p><h3>خطوات الجولة · ماذا تفعل وماذا تراقب؟</h3><ol class="lesson-steps"><li><strong>ابدأ بالسلوك السليم.</strong> اضغط «متابعة إلى الحساب» داخل المتصفح. سيقف الطلب في أداة الاعتراض؛ أرسله وشاهد <code>302</code> و<code>Location</code> ثم عنوان صفحة الحساب.</li><li><strong>اختبر حدود الثقة.</strong> ارجع إلى صفحة الدخول وغيّر حقل <code>next</code>، أو حمّل مثال الحالة من التلميح أدناه. أرسل الطلب بالمنطق الضعيف وقارن أصل الوجهة مع أصل التطبيق.</li><li><strong>افهم السبب.</strong> افتح «تدفق التنفيذ» وتنقّل بين الخطوات. اقرأ كيف قُرئت القيمة، وما الذي سمح لها بالمرور، وكيف فسّرها محلّل الروابط.</li><li><strong>أصلح ثم أعد التجربة.</strong> افتح «الكود والإصلاح»، عدّل الدالة أو فعّل المنطق المصلّح المرجعي. أعد إرسال نفس المحاولة؛ المطلوب <code>403</code> للوجهة المرفوضة مع بقاء الطلب السليم يعمل.</li><li><strong>تحقق من الجانبين.</strong> شغّل الاختبارات الاثني عشر: نجاح الإصلاح يحتاج منع التجاوزات والسماح بالروابط السليمة معاً. هذه اختبارات محدودة لهذا المختبر وليست ضماناً عاماً لأمان أي تطبيق.</li></ol><div class="section-toolbar"><button id="start-practice" class="primary">ابدأ التجربة في المتصفح</button><button id="open-repair">أين المنطق المصلّح؟</button></div></section>
 <p class="scope-note">الكود يُنفّذ فعلياً في Worker داخل إطار معزول. الطلبات واستجابات HTTP والتنقل هنا محلية؛ لا خادم خارجي ولا اتصال بالوجهات المعروضة. نتائج هذا النموذج منفصلة عن علامات المختبرات الأصلية.</p>
 <div class="work-layout">
 <section class="browser-shell" aria-label="متصفح تطبيق المختبر">
@@ -12,7 +13,7 @@
 <iframe id="lab-browser" sandbox="allow-scripts allow-forms" referrerpolicy="no-referrer" title="تطبيق Northstar التفاعلي"></iframe>
 <p id="navigation-status" role="status">ابدأ من زر متابعة داخل التطبيق.</p>
 </section>
-<section class="inspector"><div class="inspector-heading"><span class="eyebrow">WORKSPACE</span><h2>راقب ما يحدث، ثم غيّره</h2></div>
+<section class="inspector"><p id="logic-mode" class="logic-mode" role="status"></p><div class="inspector-heading"><span class="eyebrow">WORKSPACE</span><h2>راقب ما يحدث، ثم غيّره</h2></div>
 <nav class="tool-tabs" role="tablist" aria-label="أدوات المختبر"><button id="tab-request" role="tab" aria-selected="true" aria-controls="panel-request" data-pane="request">الطلب والاستجابة</button><button id="tab-source" role="tab" aria-selected="false" aria-controls="panel-source" data-pane="source" tabindex="-1">الكود والإصلاح</button><button id="tab-flow" role="tab" aria-selected="false" aria-controls="panel-flow" data-pane="flow" tabindex="-1">تدفق التنفيذ</button></nav>
 <section id="panel-request" role="tabpanel" aria-labelledby="tab-request">
 <div class="section-toolbar"><label class="toggle"><input type="checkbox" id="intercept" checked>اعتراض الطلب قبل التنفيذ</label><button id="load-control">طلب سليم</button></div>
@@ -23,17 +24,18 @@
 </section>
 <section id="panel-source" role="tabpanel" aria-labelledby="tab-source" hidden>
 <p>هذه الدالة هي التي تنتج الاستجابة التالية. عدّل التحقق أو ترتيب فك الترميز. استعمل <code>trace('اسم', { قيمة })</code> لمراقبة بياناتك.</p>
-<div class="section-toolbar"><button id="weak-source">استعادة المنطق الضعيف</button><button id="reference-source">عرض إصلاح المرجع</button></div>
+<div class="section-toolbar"><button id="weak-source">استعادة المنطق الضعيف</button><button id="reference-source">تفعيل المنطق المصلّح المرجعي</button></div>
+<details class="code-guide" open><summary>كيف أقرأ الكود وكيف يعمل الإصلاح؟</summary><p><code>request.url</code> هو الطلب الذي أرسلته. يقرأ <code>searchParams.get('next')</code> الوجهة بعد فك ترميز معامل الاستعلام مرة واحدة. <code>new URL(value, base)</code> يحوّل النص إلى عنوان كامل حسب قواعد المتصفح. <code>return</code> ينهي الدالة ويحدد الاستجابة؛ و<code>trace</code> يسجّل القيم للشرح.</p><p id="weak-explanation"></p><p><strong>الإصلاح المرجعي:</strong> يفسّر الوجهة أولاً، ثم يقارن <code>target.origin</code> بالأصل الكامل (البروتوكول + المضيف + المنفذ)، ويرفض بيانات المستخدم داخل الرابط، ويسمح فقط بالمسارين <code>/account</code> و<code>/welcome</code>. غير المسموح يرجع <code>403</code>، والمسموح يرجع <code>302</code> مع <code>Location</code>.</p><p id="repair-explanation"></p><p>الزر أعلاه يضع الإصلاح في المحرر ويجعله منطق الإرسال التالي. يمكنك تعديله؛ عندها تظهر حالة «كودك المعدّل». نتائج الطلبات السابقة تبقى مرتبطة بالكود الذي نفّذها.</p></details>
 <label for="source-editor">منطق معالج /login · JavaScript</label><textarea id="source-editor" rows="20" spellcheck="false" dir="ltr"></textarea>
 <div class="section-toolbar"><button id="run-source" class="primary">تشغيل الكود مع الطلب</button><button id="test-source">اختبار الإصلاح · 12 حالة</button></div>
 <p id="suite-summary" role="status">اختبر مدخلات سليمة وهجومية؛ منع كل الطلبات لا يُعد إصلاحاً.</p><div id="suite-results"></div>
 </section>
 <section id="panel-flow" role="tabpanel" aria-labelledby="tab-flow" hidden>
-<ol class="pipeline"><li>قراءة next</li><li>التحقق</li><li>تحليل URL</li><li>الاستجابة والتنقل</li></ol>
+<ol id="trace-pipeline" class="pipeline" aria-label="ترتيب خطوات التنفيذ الفعلي"></ol>
 <p>الخطوات أدناه هي استدعاءات trace التي نفّذها الكود فعلياً، وليست تتبعاً تلقائياً لكل سطر.</p><div class="section-toolbar"><button id="trace-prev" disabled>السابقة</button><output id="trace-position">أرسل طلباً أولاً</output><button id="trace-next" disabled>التالية</button></div>
-<h3 id="trace-label"></h3><pre id="trace-values" dir="ltr"></pre><h3>الكود الذي نُفّذ</h3><pre id="executed-source" dir="ltr"></pre>
+<h3 id="trace-label"></h3><p id="trace-explanation" class="trace-explanation"></p><p id="flow-outcome"></p><pre id="trace-values" dir="ltr"></pre><h3>الكود الذي نُفّذ</h3><pre id="executed-source" dir="ltr"></pre>
 </section>
 <p id="execution-status" role="status" aria-live="polite"></p><p id="lab-error" role="alert"></p>
 </section></div>
-<section class="mission-card"><h2>هدف الجولة</h2><ol><li>أرسل طلباً سليماً وشاهد صفحة الحساب.</li><li>غيّر next لتثبت خروج الوجهة عن أصل التطبيق في المنطق الضعيف.</li><li>عدّل التحقق، ثم مرّر اختبارات الإصلاح دون كسر الروابط السليمة.</li></ol><div id="objectives" aria-live="polite"></div><details><summary>تلميح عند الحاجة</summary><p id="hint"></p><button id="load-example">تحميل مثال الحالة إلى محرر الطلب</button></details></section>
+<section class="mission-card"><h2>هدف الجولة · دليل نجاحك</h2><ol><li>أرسل طلباً سليماً وشاهد صفحة الحساب.</li><li>غيّر next لتثبت خروج الوجهة عن أصل التطبيق في المنطق الضعيف.</li><li>عدّل التحقق، ثم مرّر اختبارات الإصلاح دون كسر الروابط السليمة.</li></ol><div id="objectives" aria-live="polite"></div><details><summary>تلميح عند الحاجة</summary><p id="hint"></p><button id="load-example">تحميل مثال الحالة إلى محرر الطلب</button></details></section>
 </main></body></html>

@@ -28,3 +28,11 @@ Trace steps are explicit callback events, not automatic instrumentation of every
 - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe
 
 Interaction patterns are independently implemented; no third-party UI code or branding is copied. The site's existing green/neutral palette is reused.
+
+### Guided explanation update
+
+The pilot now includes an expanded Arabic lesson and a five-step practical walkthrough, with distinct explanations for all six validation mistakes. The active source indicator distinguishes weak, reference-fixed, and edited code (including restored drafts and history selections). The reference button explicitly activates the fixed source for the next run.
+
+Execution flow is built from each recorded attempt's trace events, in execution order, with clickable steps, Arabic explanations, and a response outcome. Encoded cases also record the extra decoding step, so the weak and fixed order can be compared. This remains explicit instrumentation, not a general JavaScript debugger.
+
+The local browser now focuses on `next`, the actual destination origin/path, the expected origin, and the fixture policy. Decorative course progress has been removed. No external destination is contacted.
