@@ -24,7 +24,7 @@ jobs:
       - name: Verify original engines in WebAssembly
         run: npm run test:wasm
       - name: Verify direct feedback, admin authentication and analytics
-        run: npm run test:services
+        run: npm run test:services && npm run test:navigation
       - name: Build shared content
         run: python tools/build_advanced_content.py && python tools/build_content.py
       - name: Check generated content is committed

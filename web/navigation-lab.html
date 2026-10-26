@@ -1,0 +1,39 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101918"><title>مختبر التنقل · Between Bytes</title><link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./academy.css"><link rel="stylesheet" href="./navigation-lab.css"><script type="module" src="./navigation-lab.js"></script></head><body>
+<header><a class="brand" href="./index.html">B<span>›</span><small>BETWEEN BYTES<br>NAVIGATION LAB</small></a><a href="./index.html">رجوع للمختبرات</a></header>
+<main class="navigation-lab">
+<div class="lab-intro"><div><p class="eyebrow">مختبر نموذجي · JavaScript قابل للتنفيذ</p><h1>تتبّع وجهة الطلب.</h1><p>تصفّح التطبيق، اعترض طلب الدخول، وعدّل منطق التحويل. أثبت أثر الخلل ثم اختبر إصلاحك.</p></div><span class="pill">Open Redirect · 6 حالات</span></div>
+<nav id="cases" aria-label="حالات المختبر"></nav>
+<div class="case-brief"><div><h2 id="case-name"></h2><p id="case-detail"></p></div><button id="new-round">إعادة الجولة</button></div>
+<p class="scope-note">الكود يُنفّذ فعلياً في Worker داخل إطار معزول. الطلبات واستجابات HTTP والتنقل هنا محلية؛ لا خادم خارجي ولا اتصال بالوجهات المعروضة. نتائج هذا النموذج منفصلة عن علامات المختبرات الأصلية.</p>
+<div class="work-layout">
+<section class="browser-shell" aria-label="متصفح تطبيق المختبر">
+<div class="browser-top"><span class="window-dots" aria-hidden="true">● ● ●</span><strong>Northstar Academy</strong><button id="expand-browser" aria-pressed="false">تكبير المتصفح</button></div>
+<div class="browser-address"><button id="browser-back" aria-label="رجوع داخل المختبر">←</button><output id="browser-url" dir="ltr">https://app.lab/login</output><span>محلي</span></div>
+<iframe id="lab-browser" sandbox="allow-scripts allow-forms" referrerpolicy="no-referrer" title="تطبيق Northstar التفاعلي"></iframe>
+<p id="navigation-status" role="status">ابدأ من زر متابعة داخل التطبيق.</p>
+</section>
+<section class="inspector"><div class="inspector-heading"><span class="eyebrow">WORKSPACE</span><h2>راقب ما يحدث، ثم غيّره</h2></div>
+<nav class="tool-tabs" role="tablist" aria-label="أدوات المختبر"><button id="tab-request" role="tab" aria-selected="true" aria-controls="panel-request" data-pane="request">الطلب والاستجابة</button><button id="tab-source" role="tab" aria-selected="false" aria-controls="panel-source" data-pane="source" tabindex="-1">الكود والإصلاح</button><button id="tab-flow" role="tab" aria-selected="false" aria-controls="panel-flow" data-pane="flow" tabindex="-1">تدفق التنفيذ</button></nav>
+<section id="panel-request" role="tabpanel" aria-labelledby="tab-request">
+<div class="section-toolbar"><label class="toggle"><input type="checkbox" id="intercept" checked>اعتراض الطلب قبل التنفيذ</label><button id="load-control">طلب سليم</button></div>
+<label for="request-editor">طلب HTTP قابل للتعديل</label><textarea id="request-editor" rows="6" dir="ltr" spellcheck="false"></textarea>
+<div class="section-toolbar"><button id="send-request" class="primary">إرسال الطلب</button><label class="toggle"><input id="follow" type="checkbox" checked>اتبع التحويل في المتصفح المحلي</label><button id="follow-once" disabled>اتبع مرة واحدة</button></div>
+<div class="response-title"><strong>Response</strong><output id="response-status">بانتظار الإرسال</output></div><pre id="response" dir="ltr">لم يُنفّذ أي طلب بعد.</pre>
+<h3>سجل المحاولات</h3><div id="history" class="history" aria-label="الطلبات السابقة"></div><button id="compare" disabled>قارن آخر محاولتين</button><pre id="comparison" dir="ltr"></pre>
+</section>
+<section id="panel-source" role="tabpanel" aria-labelledby="tab-source" hidden>
+<p>هذه الدالة هي التي تنتج الاستجابة التالية. عدّل التحقق أو ترتيب فك الترميز. استعمل <code>trace('اسم', { قيمة })</code> لمراقبة بياناتك.</p>
+<div class="section-toolbar"><button id="weak-source">استعادة المنطق الضعيف</button><button id="reference-source">عرض إصلاح المرجع</button></div>
+<label for="source-editor">منطق معالج /login · JavaScript</label><textarea id="source-editor" rows="20" spellcheck="false" dir="ltr"></textarea>
+<div class="section-toolbar"><button id="run-source" class="primary">تشغيل الكود مع الطلب</button><button id="test-source">اختبار الإصلاح · 12 حالة</button></div>
+<p id="suite-summary" role="status">اختبر مدخلات سليمة وهجومية؛ منع كل الطلبات لا يُعد إصلاحاً.</p><div id="suite-results"></div>
+</section>
+<section id="panel-flow" role="tabpanel" aria-labelledby="tab-flow" hidden>
+<ol class="pipeline"><li>قراءة next</li><li>التحقق</li><li>تحليل URL</li><li>الاستجابة والتنقل</li></ol>
+<p>الخطوات أدناه هي استدعاءات trace التي نفّذها الكود فعلياً، وليست تتبعاً تلقائياً لكل سطر.</p><div class="section-toolbar"><button id="trace-prev" disabled>السابقة</button><output id="trace-position">أرسل طلباً أولاً</output><button id="trace-next" disabled>التالية</button></div>
+<h3 id="trace-label"></h3><pre id="trace-values" dir="ltr"></pre><h3>الكود الذي نُفّذ</h3><pre id="executed-source" dir="ltr"></pre>
+</section>
+<p id="execution-status" role="status" aria-live="polite"></p><p id="lab-error" role="alert"></p>
+</section></div>
+<section class="mission-card"><h2>هدف الجولة</h2><ol><li>أرسل طلباً سليماً وشاهد صفحة الحساب.</li><li>غيّر next لتثبت خروج الوجهة عن أصل التطبيق في المنطق الضعيف.</li><li>عدّل التحقق، ثم مرّر اختبارات الإصلاح دون كسر الروابط السليمة.</li></ol><div id="objectives" aria-live="polite"></div><details><summary>تلميح عند الحاجة</summary><p id="hint"></p><button id="load-example">تحميل مثال الحالة إلى محرر الطلب</button></details></section>
+</main></body></html>
