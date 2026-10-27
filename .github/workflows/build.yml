@@ -35,6 +35,8 @@ jobs:
         run: |
           node --check web/app.js
           node --check web/sw.js
+          node --check web/student.js
+          node --check web/welcome.js
           node --check web/academy.js
           node --check web/studio.js
           node --check web/engine-worker.js

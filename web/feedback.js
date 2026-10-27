@@ -2,9 +2,11 @@
 (()=>{
  const $=id=>document.getElementById(id),client=window.BBServiceClient;
  const selected=new URLSearchParams(location.search).get('case')||'';$('feedback-case').value=selected.replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80);
+ const version=(new URLSearchParams(location.search).get('version')||'0.14.0').replace(/[^0-9.]/g,'').slice(0,20);
+ $('feedback-context').textContent='Web '+version+' · Case: '+($('feedback-case').value||'General');
  let submission=null,sending=false;
  const content=()=>({kind:$('feedback-kind').value,title:$('feedback-title').value.trim(),message:$('feedback-message').value.trim(),case_id:$('feedback-case').value.trim(),email:$('feedback-email').value.trim(),website:$('feedback-website').value});
- const fallback=()=>{const d=content(),url=new URL('https://github.com/khdertaysh1/Between-Bytes-Android-/issues/new');url.searchParams.set('title','[Web '+d.kind+'] '+d.title);url.searchParams.set('body','Case: '+(d.case_id||'General')+'\nWeb: 0.9.0\n\n'+d.message);$('feedback-github').href=url.href;};
+ const fallback=()=>{const d=content();$('feedback-context').textContent='Web '+version+' · Case: '+(d.case_id||'General');const url=new URL('https://github.com/khdertaysh1/Between-Bytes-Android-/issues/new');url.searchParams.set('title','[Web '+d.kind+'] '+d.title);url.searchParams.set('body','Case: '+(d.case_id||'General')+'\nWeb: '+version+'\n\n'+d.message);$('feedback-github').href=url.href;};
  $('feedback-form').addEventListener('input',()=>{submission=null;$('feedback-result').textContent='';fallback();});
  if(!client?.configured){$('feedback-availability').hidden=false;$('feedback-submit').disabled=true;$('feedback-alternative').open=true;}fallback();
  $('feedback-copy').onclick=async()=>{try{const d=content();await navigator.clipboard.writeText(d.title+'\n'+d.case_id+'\n\n'+d.message);$('feedback-result').textContent='تم نسخ النص. لم تُرسل الملاحظة.';}catch{$('feedback-result').textContent='تعذّر النسخ التلقائي؛ يمكنك تحديد النص ونسخه يدوياً.';}};

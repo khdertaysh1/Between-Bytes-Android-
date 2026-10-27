@@ -1,4 +1,6 @@
-# Between Bytes Academy · Web 0.9 / Android 0.3.0
+# Between Bytes Academy · Web 0.14.0 / Android 0.3.0
+
+تحسينات تجهيز الطلاب Web 0.14.0: [تدريب البداية والمسار والنسخ الاحتياطية](docs/STUDENT_LAUNCH_WEB_014.md). تدريب `web/welcome.html` يستخدم محرك Python نفسه ويحتاج تنفيذاً وقراءة مستقلة لكل خطوة؛ لا يضع علامة إنجاز للمختبر الكامل.
 
 تفاصيل إصلاحات التحويل وJWT ونتائج فحص كل حالة: [تدقيق Web 0.8.1](docs/CASE_AUDIT_WEB_081.md).
 

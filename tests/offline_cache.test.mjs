@@ -28,7 +28,7 @@ test('offline navigation falls back to cached shell, while missing scripts retur
 test('updated entry points bypass old bare-URL caches and precache every referenced script/stylesheet for offline reload',async()=>{
  const context=vm.createContext({URL,self:{registration:{scope:'https://academy.test/course/'},location:{origin:'https://academy.test'},addEventListener:()=>{}}});
  vm.runInContext(source,context);const assets=vm.runInContext('ASSETS',context);
- for(const page of ['index.html','about.html','feedback.html']){
+ for(const page of ['index.html','about.html','feedback.html','welcome.html']){
   const html=await readFile(new URL('../web/'+page,import.meta.url),'utf8');
   const refs=[...html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="([^"]+)"[^>]*>/g)].map(x=>x[1]).filter(x=>/\.(?:js|css)(?:\?|$)/.test(x));
   for(const ref of refs){assert.ok(assets.includes(ref),page+' offline asset '+ref);await readFile(new URL('../web/'+ref.split('?')[0].replace(/^\.\//,''),import.meta.url));}
