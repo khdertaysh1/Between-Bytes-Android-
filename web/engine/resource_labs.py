@@ -129,7 +129,8 @@ def authentication(case, fixed, d, state):
     before = deepcopy(state.setdefault('accounts', {'alice': {'revision': 0}, 'bob': {'revision': 0}}))
     used = state.setdefault('consumed', [])
     session_case = key == 'session'
-    valid = owner == target and ((purpose == 'session' and phase in {'active', 'mfa-complete'}) if session_case else (purpose == 'reset' and phase == 'fresh' and value not in used))
+    allowed_phases = {'mfa-complete'} if case == 'authentication-mfa' else {'active', 'mfa-complete'}
+    valid = owner == target and ((purpose == 'session' and phase in allowed_phases) if session_case else (purpose == 'reset' and phase == 'fresh' and value not in used))
     # Isolate the single absent rule in each vulnerable implementation.
     if case == 'authentication-reset-binding': weak = purpose == 'reset' and phase == 'fresh' and value not in used
     elif case == 'authentication-reset-replay': weak = purpose == 'reset' and phase in {'fresh', 'used'}
@@ -140,7 +141,7 @@ def authentication(case, fixed, d, state):
     else: raise ValueError('Unknown identity case')
     accepted = valid if fixed else weak
     if not accepted:
-        return result(403 if purpose == 'session' and phase == 'password-only' else 401,
+        return result(403 if purpose == 'session' and phase in {'active', 'password-only'} else 401,
                       {'authorized': False, 'accounts': before, 'operation_applied': False},
                       protected=fixed and not valid, code='credential_contract_failed')
     if not session_case:

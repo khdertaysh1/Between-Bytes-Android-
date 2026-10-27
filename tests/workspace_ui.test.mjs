@@ -104,6 +104,17 @@ test('fixed null resources, empty results and HTTP 200 protections remain visibl
  const ui=await workspace();try{for(const id of ['acl-read','disclosure-env','code-sqli','cors-reflect','authentication-reset-binding','code-redirect']){const row=cases.find(c=>c.id===id);await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');ui.d.getElementById('input').value=JSON.stringify(row.attack);ui.variant('fixed');await ui.submit('service-submit');const out=ui.d.getElementById('service-effect');assert.equal(out.hidden,false,id);assert.equal(out.dataset.state,'protected',id);assert.match(out.textContent,/مُنعت/);assert.ok(out.querySelector('.result-content').textContent.length>15,id);}}
  finally{ui.dom.window.close();}
 });
+test('MFA fixed application denies generic active sessions and displays only completed-factor profiles',async()=>{
+ const ui=await workspace();try{
+  await ui.go(cases.find(c=>c.id==='authentication-mfa'));ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset MFA');ui.variant('fixed');
+  for(const [session,allowed] of [['session-active',false],['session-password-only',false],['session-mfa-complete',true]]){
+   const field=ui.d.querySelector('[data-service-field="session"]');field.value=session;field.dispatchEvent(new ui.w.Event('input',{bubbles:true}));await ui.submit('service-submit');
+   const content=ui.d.getElementById('site-business-result').textContent;
+   assert.equal(content.includes('DEMO_PRIVATE_PROFILE'),allowed,session+' private data');
+   assert.match(ui.d.getElementById('service-response').textContent,allowed?/200/:/403/,session+' response');
+  }
+ }finally{ui.dom.window.close();}
+});
 test('paired replay sends the current body to the other variant and reset clears comparison',async()=>{
  const ui=await workspace();try{const row=cases.find(c=>c.id==='acl-read');await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');ui.d.getElementById('input').value=JSON.stringify(row.attack);ui.variant('vulnerable');await ui.submit('service-submit');await ui.submit('compare-replay');assert.equal(ui.d.getElementById('studio-mode').value,'fixed');assert.equal(ui.d.querySelector('[data-comparison-mode=vulnerable]').dataset.state,'impact');assert.equal(ui.d.querySelector('[data-comparison-mode=fixed]').dataset.state,'protected');ui.d.querySelector('[data-service-field=object]').value='a-1';ui.d.querySelector('[data-service-field=object]').dispatchEvent(new ui.w.Event('input'));assert.equal(ui.d.getElementById('response-comparison').hidden,true);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');assert.equal(ui.d.getElementById('response-comparison').hidden,true);}
  finally{ui.dom.window.close();}
