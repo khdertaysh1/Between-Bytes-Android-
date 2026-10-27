@@ -80,6 +80,41 @@ json.dumps(rows)
  assert.equal(invoke({path:'/academy/api/assignment/assignment-role/fixed',method:'POST',input:{patch:{display_name:'A',role:true}}}).status,400);
  assert.equal(invoke({path:'/academy/api/assignment/assignment-nested/fixed',method:'POST',input:{patch:{display_name:'A',permissions:{export:'true'}}}}).status,400);
 });
+test('MFA requires an explicit completed second factor across the entire session ledger',()=>{
+ for(const mode of ['vulnerable','fixed'])for(const session of ['session-active','session-logged-out','session-mfa-complete','session-password-only','reset-alice','verify-email-alice','unknown-session']){
+  invoke({path:'/academy/reset',fields:{case:'authentication-mfa'}});
+  const r=invoke({path:'/academy/api/authentication/authentication-mfa/'+mode,method:'POST',input:{session}});
+  const accepted=session==='session-mfa-complete'||(mode==='vulnerable'&&session==='session-password-only');
+  assert.equal(r.body.data.authorized,accepted,mode+' '+session);
+  if(!accepted)assert.equal(r.body.data.operation_applied??false,false);
+  if(mode==='fixed'&&['session-active','session-password-only'].includes(session))assert.equal(r.status,403);
+ }
+ // The ordinary logout lesson can still accept an active, non-revoked session.
+ assert.equal(invoke({path:'/academy/api/authentication/authentication-logout/fixed',method:'POST',input:{session:'session-active'}}).status,200);
+});
+test('all 108 case routes reject or handle altered field types without uncaught errors or fixed impact',()=>{
+ const report=JSON.parse(py.runPython(`
+from copy import deepcopy
+rows=[]
+for c in CATALOG:
+ count=0
+ for mode in ['vulnerable','fixed']:
+  for key in c['normal']:
+   for value in [None,True,False,0,-1,1.5,[],{},['x'],{'x':'y'},'', 'x'*1100]:
+    invoke(json.dumps({'path':'/academy/reset','fields':{'case':c['id']}}))
+    data=deepcopy(c['normal']); data[key]=value
+    r=json.loads(invoke(json.dumps({'path':'/academy/api/'+c['group']+'/'+c['id']+'/'+mode,'method':'POST','input':data})))
+    assert 200<=r['status']<500, (c['id'],key,r)
+    if mode=='fixed':
+     evidence=json.loads(invoke(json.dumps({'path':'/academy/evidence?case='+c['id']+'&mode=fixed'})))
+     assert not evidence['body'].get('impact'), (c['id'],key,r)
+    count+=1
+ rows.append({'id':c['id'],'requests':count})
+json.dumps(rows)
+`));
+ assert.equal(report.length,108);
+ assert.equal(report.reduce((n,r)=>n+r.requests,0),4176);
+});
 test('redirect parsing accepts learner-created destinations and each weak rule differs from fixed and from the other weak rules',()=>{
  const samples={ 'code-redirect':'https://attacker.test/new-page', 'redirect-relative':'//attacker.test/new-page', 'redirect-backslash':'/\\attacker.test/new-page', 'redirect-encoded':'%2f%2fattacker.test%2fnew-page', 'redirect-suffix':'https://app.lab.attacker.test/new-page', 'redirect-nested':'/continue?next=https%3A%2F%2Fattacker.test%2Fnew-page' };
  for(const [id,next] of Object.entries(samples)){
