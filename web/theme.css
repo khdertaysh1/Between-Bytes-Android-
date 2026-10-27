@@ -1,0 +1,101 @@
+/* Shared academy palette. Keep this after page styles, including on offline pages. */
+:root,body.experience-v4 {
+  --bg:#e8ecef;
+  --panel:#1c2b48;
+  --ink:#ffffff;
+  --muted:#d8e5f1;
+  --green:#a7c7e7;
+  --line:#526d8f;
+  --blue-action:#42688e;
+}
+body,body.experience-v4 {
+  background:linear-gradient(145deg,#c4d8e5 0,#e8ecef 48%,#e1e8ee 100%);
+  background-attachment:fixed;
+  color:#1c2b48;
+}
+body>header,.experience-v4 header {
+  background:#1c2b48;
+  color:#fff;
+  border-color:#526d8f;
+}
+body>header .brand,body>header a,body>header button { color:#fff; }
+a { color:#24496f; }
+button,select { background:#42688e;color:#fff;border-color:#8eb1d1; }
+button:hover,a:hover { filter:brightness(1.07); }
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,select:focus-visible {
+  outline:3px solid #42688e;outline-offset:4px;
+}
+header :focus-visible { outline-color:#a7c7e7; }
+label,.note,footer { color:#344c69; }
+input,textarea { background:#fff;color:#1c2b48;border-color:#6b88a7; }
+progress { accent-color:#8eb1d1;background:#3a506e; }
+progress::-webkit-progress-bar { background:#3a506e; }
+progress::-webkit-progress-value { background:#a7c7e7; }
+progress::-moz-progress-bar { background:#a7c7e7; }
+input[type=checkbox] { accent-color:#42688e; }
+/* White type belongs to blue surfaces; plain-page labels retain dark ink. */
+.hero,.experience-v4 .hero,.basics-entry,.foundation-hero {
+  background:linear-gradient(120deg,#2e4b70,#1c2b48);
+  border-color:#526d8f;color:#fff;
+  box-shadow:0 12px 32px #1c2b4814;
+}
+.scenario-card,.experience-v4 .lab-card,.learning-hub,.mission-panel,
+.student-panel,#student-path,.foundation-progress,.foundation-finish,
+.info-card,.info-page form,.case-map,.lesson article,.lesson>details,
+.proof,.workbench,#student-context,dialog,.lesson-drawer {
+  background:#1c2b48;color:#fff;border-color:#526d8f;
+}
+.mission-panel,.foundation-finish { background:#2b4364; }
+.student-stages li,.foundation-layout #foundation-nav a {
+  background:#283f60;color:#fff;border-color:#637e9e;
+}
+.foundation-layout #foundation-nav a[aria-current=page] {
+  background:#42688e;color:#fff;border-color:#a7c7e7;
+}
+:is(.hero,.basics-entry,.foundation-hero,.scenario-card,.learning-hub,.mission-panel,
+.student-panel,#student-path,.foundation-progress,.foundation-finish,.info-card,
+.info-page form,.case-map,.lesson,.proof,#student-context,dialog)
+:is(p,label,small,.note,a,summary,.eyebrow) { color:#fff; }
+.hero .stats b,.hero .stats span { color:#fff; }
+.hero-code { color:#a7c7e7; }
+.hero-code em { color:#fff; }
+.foundation-hero #foundation-scope,.foundation-progress p:last-child,
+.foundation-layout #foundation-nav small { color:#e8ecef; }
+.foundation-lead,#foundation-sections h3,#foundation-sections p,
+.foundation-inline-code,.foundation-understanding summary { color:#1c2b48; }
+.foundation-understanding { border-color:#42688e; }
+.foundation-pager { border-color:#8eb1d1; }
+.foundation-hero-actions .foundation-skip-link { color:#fff;border-color:#a7c7e7; }
+.info-page .lead,.feedback-note { color:#344c69; }
+.card-top,.card-bottom,.lab-examples span { color:#fff; }
+.lab-examples span { background:#426080; }
+.primary,.primary:hover,nav button.active,
+.case-map nav a.selected,.learning-actions #code-run,.learning-actions #code-send {
+  background:#42688e;color:#fff;border-color:#8eb1d1;
+}
+.primary:hover,nav button.active:hover { background:#345678; }
+.scenario-card:hover { border-color:#8eb1d1; }
+.student-stages li[aria-current=step] { border-color:#a7c7e7; }
+#challenge-complete { color:#fff;border-color:#a7c7e7; }
+.eyebrow { color:#345678; }
+.hero .eyebrow,.basics-entry .eyebrow,.foundation-hero .eyebrow { color:#fff; }
+.engine-status { background:#2b4364;color:#fff;border-color:#8eb1d1; }
+/* Embedded applications retain their own readable light-blue work surfaces. */
+.foundation-experiment button { background:#42688e;color:#fff;border-color:#42688e; }
+.foundation-experiment input,.foundation-experiment textarea,.foundation-experiment select {
+  background:#fff;color:#1c2b48;border-color:#6b88a7;
+}
+.foundation-experiment .foundation-inline-code { color:inherit; }
+@media(prefers-reduced-motion:reduce) {
+  .scenario-card { transition:none; }
+}
+
+#analytics-consent { background:#1c2b48;color:#fff;border-color:#8eb1d1; }
+#analytics-consent a { color:#a7c7e7; }
+.workbench>.note,.workbench>p,.studio-controls label { color:#fff; }
+a.primary { display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border:1px solid #8eb1d1;border-radius:10px;text-decoration:none; }
+.scenario-card { min-width:0;overflow-wrap:anywhere; }
+.card-bottom { flex-wrap:wrap;gap:8px; }
+@media(max-width:1150px) {
+  .experience-v4 #cards { grid-template-columns:minmax(0,1fr); }
+}
