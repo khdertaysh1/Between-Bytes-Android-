@@ -17,7 +17,10 @@ test('actual engine trace names real source lines and disabling tracing leaves i
  py.FS.mkdirTree('/academy');for(const name of ['academy.py','academy_http.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','academy_catalog.json','resource_catalog.json','advanced_catalog.json','wasm_api.py'])py.FS.writeFile('/academy/'+name,await file('engine/'+name));py.runPython("import sys;sys.path.insert(0,'/academy');from wasm_api import invoke");
  const invoke=request=>{py.globals.set('_req',JSON.stringify(request));return JSON.parse(py.runPython('invoke(_req)'));};
  for(const mode of ['vulnerable','fixed']){const r=invoke({path:'/academy/api/payment/pay-price/'+mode,method:'POST',input:{price:1},trace:true});assert.equal(r.status,mode==='fixed'?422:200);assert.ok(r.trace.events.some(e=>e.file==='commerce.py'&&e.function==='execute'&&e.values.fixed===(mode==='fixed'?'True':'False')));for(const e of r.trace.events){const lines=(await file('engine/'+e.file)).split('\n');assert.ok(e.line>0&&e.line<=lines.length);}}
- assert.equal(invoke({path:'/academy/api/payment/pay-price/fixed',method:'POST',input:{price:10000}}).trace,undefined);
+  const recorded=invoke({path:'/academy/api/payment/pay-price/fixed',method:'POST',input:{price:1},trace:true});
+  for(const e of recorded.trace.events){const lines=(await file('engine/'+e.file)).split('\n');assert.equal(e.source,lines[e.line-1],e.file+':'+e.line+' exact executed source');}
+  assert.ok(recorded.trace.events.some(e=>e.file==='commerce.py'&&e.source.includes('status=422')));
+  assert.equal(invoke({path:'/academy/api/payment/pay-price/fixed',method:'POST',input:{price:10000}}).trace,undefined);
 });
 test('startup failure stops loading and retry creates a fresh worker, ignoring late messages',async()=>{
  const dom=new JSDOM('<p id="runtime-status"></p>',{url:'https://academy.test/',runScripts:'outside-only'});const w=dom.window;const workers=[];class Worker{constructor(){workers.push(this);}postMessage(data){this.request=data;}terminate(){this.terminated=true;}}

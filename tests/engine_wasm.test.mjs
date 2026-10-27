@@ -31,6 +31,21 @@ test('transport preserves business responses, matching evidence, and persistent 
  const read=invoke({path:'/academy/resource?case=pay-price&mode=fixed'});assert.equal(read.body.data.order.totals.amount_due,10000);assert.equal(read.body.data.order.revision,0);
  assert.equal(request('fixed',10000).status,200);
 });
+test('HTTP status contracts come from executed decisions, including equal-200 CORS and exhausted rate budgets',()=>{
+ const request=(id,mode,input,extra={})=>invoke({path:'/academy/api/'+id[0]+'/'+id[1]+'/'+mode,method:'POST',input,trace:true,...extra});
+ const cases=JSON.parse(py.runPython('json.dumps(CATALOG)'));
+ for(const [id,weakStatus,fixedStatus] of [['pay-price',200,422],['acl-read',200,403],['code-nosql',200,422],['jwt-none',200,401],['disclosure-env',200,404],['csrf-get',200,405],['csrf-content-type',200,415],['upload-extension',201,415],['cors-reflect',200,200]]){
+  const c=cases.find(c=>c.id===id);invoke({path:'/academy/reset',fields:{case:id}});
+  const weak=request([c.group,id],'vulnerable',c.attack),fixed=request([c.group,id],'fixed',c.attack);
+  assert.equal(weak.status,weakStatus,id+' weak HTTP');assert.equal(fixed.status,fixedStatus,id+' fixed HTTP');
+  assert.equal(fixed.headers['X-BB-Execution'],'local-python-wasm');assert.ok(fixed.trace.events.some(e=>e.source),id+' observed source');if(id.startsWith('csrf-'))assert.ok(fixed.trace.events.some(e=>e.file==='request_security.py'&&e.source.includes("status=405")),id+' business decision survives validation trace budget');
+  if(id==='cors-reflect'){assert.equal(weak.body.data.readable,true);assert.equal(fixed.body.data.readable,false);assert.equal(fixed.body.data.private,null);}
+ }
+ const c=cases.find(c=>c.id==='rate-xff');invoke({path:'/academy/reset',fields:{case:c.id}});
+ for(const mode of ['vulnerable','fixed']){const first=request([c.group,c.id],mode,c.normal);assert.equal(first.status,429);assert.equal(first.body.attempts.checked,3);assert.equal(first.body.attempts.throttled,1);assert.deepEqual(first.body.attempts.operations.map(o=>o.status),[401,401,401,429]);const next=request([c.group,c.id],mode,c.attack);assert.equal(next.status,mode==='fixed'?429:401);assert.equal(next.body.attempts.checked,mode==='fixed'?0:1);assert.equal(next.body.attempts.throttled,mode==='fixed'?1:0);if(mode==='fixed')assert.equal(next.headers['Retry-After'],'60');}
+ const gift=cases.find(c=>c.id==='pay-gift');invoke({path:'/academy/reset',fields:{case:gift.id}});const partial=request([gift.group,gift.id],'fixed',{spend:6000,repeat:2});assert.equal(partial.status,207);assert.deepEqual(partial.body.data.operations.map(o=>o.status),[200,409]);
+ const invalid=request(['access','acl-read'],'fixed',{object:'a-1',extra:true});assert.equal(invalid.status,400);assert.equal(invalid.body.error.code,'invalid_request');
+});
 test('virtual routes validate groups, fields, methods and content type',()=>{
  const base={path:'/academy/api/access/acl-read/fixed',method:'POST',input:{object:'a-1'}};
  assert.equal(invoke({...base,method:'GET'}).status,405);

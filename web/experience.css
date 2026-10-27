@@ -36,3 +36,5 @@ body.experience-v4{--bg:#0b1514;--panel:#142220;--line:#2b423b;--green:#b4edc9;b
 #virtual-page[data-outcome=impact] #site-result-summary{border-inline-start:5px solid #b07a30;padding-inline-start:16px}#virtual-page[data-outcome=protected] #site-result-summary{border-inline-start:5px solid #398454;padding-inline-start:16px}
 .readback-caption{font-size:13px;color:#46684f}.comparison-http summary{min-height:44px;display:flex;align-items:center}
 @media(max-width:700px){.comparison-outcomes,.variant-code-comparison .variant-comparison{grid-template-columns:1fr}.response-delta{padding:10px}.response-diff-table{font-size:11px}.response-diff-table th,.response-diff-table td{padding:6px}.experience-v4 .browser-chrome{flex-wrap:wrap}.experience-v4 #studio .browser-variant{display:inline-flex;max-width:none}.experience-v4 .browser-url{min-width:0}.variant-code-card{padding:12px}}
+
+.actual-code-comparison pre{max-height:420px;overflow:auto}.comparison-bodies{margin:18px 0}.comparison-bodies>summary,.variant-code-comparison>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:#335d41}

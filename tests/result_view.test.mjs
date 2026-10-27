@@ -35,3 +35,9 @@ test('an unsent variant never acquires a response or a fabricated difference tab
   assert.equal(out.querySelector('.response-delta'),null);assert.equal(out.querySelector('[data-comparison-mode=fixed]').dataset.state,undefined);assert.match(out.textContent,/has not been sent/);
  }finally{dom.window.close();}
 });
+test('executed source panels show interpreter records rather than substituting teaching snippets',()=>{
+ const trace=mode=>({events:[{file:'request_security.py',function:'cors',line:42,event:'line',source:mode==='fixed'?'allowed = trusted':'allowed = weak_allowed',values:{fixed:mode==='fixed'?'True':'False'}}]});
+ const {dom,out}=render({vulnerable:result('vulnerable',{readable:true},{execution_trace:trace('vulnerable')}),fixed:result('fixed',{readable:false},{execution_trace:trace('fixed')})});try{
+  assert.match(out.querySelector('[data-executed-mode=fixed]').textContent,/allowed = trusted/);assert.match(out.querySelector('[data-executed-mode=vulnerable]').textContent,/allowed = weak_allowed/);assert.ok(out.querySelector('[data-source-line="request_security.py:42"]'));assert.doesNotMatch(out.querySelector('.actual-code-comparison').textContent,/validate\(input\)/);
+ }finally{dom.window.close();}
+});
