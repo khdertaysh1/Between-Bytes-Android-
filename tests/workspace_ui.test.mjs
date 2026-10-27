@@ -11,13 +11,14 @@ py.runPython("import sys; sys.path.insert(0,'/academy'); from wasm_api import in
 const invoke=request=>{py.globals.set('_ui_request',JSON.stringify(request));return JSON.parse(py.runPython('invoke(_ui_request)'));};
 const sleep=()=>new Promise(r=>setTimeout(r,0));
 async function until(fn,label){for(let i=0;i<400;i++){if(fn())return;await sleep();}throw Error('UI timeout: '+label);}
-async function workspace(){
+async function workspace({failCatalog=false}={}){
  const errors=[];const vc=new VirtualConsole();vc.on('jsdomError',error=>{if(!/navigation|window.scrollTo/.test(error.message))errors.push(error);});
  const dom=new JSDOM(await source('index.html'),{url:'https://academy.test/',runScripts:'outside-only',virtualConsole:vc});const w=dom.window,d=w.document;
  w.HTMLElement.prototype.scrollIntoView=()=>{};w.scrollTo=()=>{};w.matchMedia=()=>({matches:false});w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};w.TextDecoder=TextDecoder;w.TextEncoder=TextEncoder;w.Headers=Headers;
  w.fetch=async url=>new Response(await source('engine/'+new URL(url).pathname.split('/').at(-1)));
- w.BBEngine={fetch:async(path,options={})=>{if(path==='/rooms/session')return new Response('{"local":true}');if(path==='/academy/catalog')return new Response(JSON.stringify({cases}));const request={trace:String(path).startsWith('/academy/api/')&&!!d.getElementById('trace-enabled')?.checked,path,method:options.method||'GET',headers:options.headers||{}};if(typeof options.body==='string')request.input=JSON.parse(options.body);else if(options.body)request.fields=Object.fromEntries(options.body);const r=invoke(request);const response=new Response(JSON.stringify(r.body),{status:r.status,headers:r.headers});response.bbTrace=r.trace;return response;},preview:async token=>invoke({action:'preview',token}).html};
- for(const file of ['case-controls.js','result-view.js','experience.js','learning.js','lab-tools.js','studio.js','academy.js'])w.eval(await source(file));
+ w.BBEngine={fetch:async(path,options={})=>{if(path==='/rooms/session')return new Response('{"local":true}');if(path==='/academy/catalog'){if(failCatalog){failCatalog=false;throw Error('offline fixture');}return new Response(JSON.stringify({cases}));}const request={trace:String(path).startsWith('/academy/api/')&&!!d.getElementById('trace-enabled')?.checked,path,method:options.method||'GET',headers:options.headers||{}};if(typeof options.body==='string')request.input=JSON.parse(options.body);else if(options.body)request.fields=Object.fromEntries(options.body);const r=invoke(request);const response=new Response(JSON.stringify(r.body),{status:r.status,headers:r.headers});response.bbTrace=r.trace;return response;},preview:async token=>invoke({action:'preview',token}).html};
+ const shouldRetry=failCatalog;for(const file of ['case-controls.js','result-view.js','experience.js','learning.js','lab-tools.js','studio.js','student.js','academy.js'])w.eval(await source(file));
+ if(shouldRetry){await until(()=>!d.getElementById('catalog-retry').hidden,'catalog error');assert.equal(d.querySelectorAll('.lab-card').length,0);d.getElementById('catalog-retry').click();}
  await until(()=>d.querySelectorAll('.lab-card').length===15,'catalog');
  const go=async row=>{w.location.hash='#/'+row.group+'/'+row.id;await until(()=>d.getElementById('room-meta').textContent.endsWith(row.id),'route '+row.id);};
  const click=id=>d.getElementById(id).click();
@@ -202,4 +203,12 @@ test('a failed request cannot leave the preceding successful result presented as
 test('browser execution observations replace the pending message on the content page',async()=>{
  const ui=await workspace();try{await ui.go(cases.find(c=>c.id==='xss-html'));ui.click('site-open-work');await ui.submit('service-submit');assert.match(ui.d.getElementById('site-result-summary').textContent,/بانتظار/);ui.w.BBExperience.browserObservation({executed:true});assert.match(ui.d.getElementById('site-result-summary').textContent,/رُصد تنفيذ JavaScript/);assert.doesNotMatch(ui.d.getElementById('site-result-summary').textContent,/بانتظار/);}
  finally{ui.dom.window.close();}
+});
+
+test('catalog failure has a working retry, student path mounts and case hints keep input unchanged',async()=>{
+ const ui=await workspace({failCatalog:true});try{assert.equal(ui.d.getElementById('catalog-status').hidden,true);assert.equal(ui.d.querySelectorAll('#student-path .student-stages li').length,5);await ui.go(cases[0]);const original=ui.d.getElementById('input').value;for(let i=0;i<3;i++)ui.click('hint');assert.equal(ui.d.getElementById('hint').disabled,true);assert.equal(ui.d.getElementById('input').value,original);assert.match(ui.d.getElementById('feedback-link').href,/case=pay-price/);await ui.go(cases[1]);assert.equal(ui.d.getElementById('hint').disabled,false);assert.deepEqual(ui.errors.map(e=>e.message),[]);}finally{ui.dom.window.close();}
+});
+
+test('storage failure warns and the backup still captures in-memory drafts and notes after returning home',async()=>{
+ const ui=await workspace();const storage=Object.getPrototypeOf(ui.w.localStorage),original=storage.setItem;try{await ui.go(cases[0]);storage.setItem=()=>{throw Error('quota');};ui.d.getElementById('input').value='{"price":7}';ui.d.getElementById('reflection').value='My unsaved observation';ui.w.location.hash='';await until(()=>!ui.d.getElementById('overview').hidden,'home');assert.equal(ui.d.getElementById('storage-warning').hidden,false);const data=ui.w.BBStudent.backup();assert.equal(data.drafts['pay-price'].input,'{"price":7}');assert.equal(data.notes['pay-price'],'My unsaved observation');}finally{storage.setItem=original;ui.dom.window.close();}
 });

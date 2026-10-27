@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "prepare:practice": "node tools/prepare_practice.mjs",
-    "test:wasm": "node --test tests/result_view.test.mjs tests/engine_wasm.test.mjs tests/offline_cache.test.mjs tests/workspace_ui.test.mjs tests/learning.test.mjs tests/lab_tools.test.mjs",
+    "test:wasm": "node --test tests/student.test.mjs tests/result_view.test.mjs tests/engine_wasm.test.mjs tests/offline_cache.test.mjs tests/workspace_ui.test.mjs tests/learning.test.mjs tests/lab_tools.test.mjs",
     "dev": "node tools/dev_services.mjs",
     "test:services": "node --test tests/services_worker.test.mjs tests/services_ui.test.mjs tests/learner.test.mjs tests/account_ui.test.mjs tests/live_browser.test.mjs",
     "deploy:services": "node tools/deploy_services.mjs",

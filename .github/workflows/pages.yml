@@ -71,6 +71,8 @@ jobs:
           node --check web/code-worker.js
           node --check web/offline-bridge.js
           node --check web/studio.js
+          node --check web/student.js
+          node --check web/welcome.js
           node --check web/academy.js
           node --check web/sw.js
       - uses: actions/configure-pages@v5
