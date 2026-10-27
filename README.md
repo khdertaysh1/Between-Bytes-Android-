@@ -1,4 +1,6 @@
-# Between Bytes Academy · Web 0.14.0 / Android 0.3.0
+# Between Bytes Academy · Web 0.15.0 / Android 0.3.0
+
+إصلاح ظهور منطق ما بعد الإصلاح وثلاثة تحديات مستقلة بصفحات تطبيق واعتراض طلبات: [تفاصيل Web 0.15.0](docs/REPAIR_AND_CAPSTONES_WEB_015.md).
 
 تحسينات تجهيز الطلاب Web 0.14.0: [تدريب البداية والمسار والنسخ الاحتياطية](docs/STUDENT_LAUNCH_WEB_014.md). تدريب `web/welcome.html` يستخدم محرك Python نفسه ويحتاج تنفيذاً وقراءة مستقلة لكل خطوة؛ لا يضع علامة إنجاز للمختبر الكامل.
 

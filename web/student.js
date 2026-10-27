@@ -1,6 +1,6 @@
 'use strict';
 window.BBStudent=(()=>{
- const VERSION='0.14.0',MAX=1048576,$=id=>document.getElementById(id);
+ const VERSION='0.15.0',MAX=1048576,$=id=>document.getElementById(id);
  const copy=(lang,ar,en)=>lang==='en'?en:ar;
  const node=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
  const stages=[
@@ -22,7 +22,7 @@ window.BBStudent=(()=>{
   const host=$('student-path');if(!host)return;
   const tx=(ar,en)=>copy(lang,ar,en);host.replaceChildren();
   host.append(node('h2',tx('ابدأ من هون','Start here')),node('p',tx('أول مرة؟ تعلّم الإرسال والتعديل والمقارنة بتجربة موجهة من 5–10 دقائق. كل المختبرات تبقى مفتوحة.','First visit? Learn to send, edit and compare in a guided 5–10 minute exercise. Every lab stays open.')));
-  const welcome=node('a',tx('ابدأ التدريب التفاعلي ←','Start the interactive introduction →'));welcome.href='./welcome.html'+(lang==='en'?'?lang=en':'');welcome.className='primary';host.append(welcome);
+  const welcome=node('a',tx('ابدأ التدريب التفاعلي ←','Start the interactive introduction →'));welcome.href='./welcome.html'+(lang==='en'?'?lang=en':'');welcome.className='primary';host.append(welcome);const challenges=node('a',tx('اختبر فهمك بالتحديات المستقلة ←','Test your understanding with independent challenges →'));challenges.href='./challenges.html'+(lang==='en'?'?lang=en':'');challenges.className='student-challenge-link';host.append(challenges);
   const list=node('ol');list.className='student-stages';
   for(const stage of stages){const items=rows.filter(r=>stage.groups.includes(r.group)),done=items.filter(r=>api.completed().includes(r.id)).length;
    const li=node('li');li.append(node('h3',lang==='en'?stage.en:stage.ar),node('p',stage.goal[lang==='en'?1:0]),node('p',tx('المتطلبات: ','Prerequisites: ')+stage.pre[lang==='en'?1:0]),node('small',tx('وقت مقترح للحالة: 10–20 دقيقة · ','Suggested per case: 10–20 minutes · ')+done+' / '+items.length));
@@ -58,7 +58,7 @@ window.BBStudent=(()=>{
   const context=$('student-context');if(!context||!row)return;
   context.replaceChildren();const info=node('p',copy(lang,'التنفيذ: Python محلي داخل المتصفح. الردود ينشئها محوّل HTTP محلي؛ ليست طلبات لسيرفر خارجي.','Execution: local Python in your browser. A local HTTP adapter constructs responses; these are not external server requests.'));
   if(['csrf','cors','ssrf','redirect'].includes(row.group))info.textContent=copy(lang,'التنفيذ: نموذج سياسة محلي محدود. لا يختبر عبور شبكة خارجية أو حماية المتصفح الفعلية عبر أصلين.','Execution: a bounded local policy model. It does not test external transport or actual cross-origin browser enforcement.');
-  const report=node('a',copy(lang,'بلّغ عن مشكلة بهالحالة','Report a problem with this case'));report.href=link.href;context.append(info,report);
+  const report=node('a',copy(lang,'بلّغ عن مشكلة بهالحالة','Report a problem with this case'));report.href=link.href;const logic=node('button',copy(lang,'افتح منطق الثغرة والإصلاح','Open vulnerable and repaired logic'));logic.type='button';logic.onclick=()=>{document.getElementById('studio-tab-learning')?.click();document.getElementById('studio-panel-learning')?.scrollIntoView({block:'start'});};context.append(info,logic,report);
  }
  return {render,route,hint,validate,backup,restore};
 })();

@@ -12,6 +12,26 @@ def reply(status,body,headers=None):
 def dispatch(request):
  try:
   url=urlsplit(request['path']);path=url.path;method=request.get('method','GET');query=parse_qs(url.query)
+  if path.startswith('/academy/challenges'):
+   from challenges import challenges,CATALOG as CHALLENGES,CASES as CHALLENGE_CASES
+   from copy import deepcopy
+   if path=='/academy/challenges':
+    if method!='GET':return reply(405,{'error':{'message':'Use GET'}},{'Allow':'GET'})
+    return reply(200,{'challenges':CHALLENGES})
+   if path=='/academy/challenges/reset' and method=='POST':
+    body=request.get('input')
+    if not isinstance(body,dict) or set(body)!={'case'} or not isinstance(body['case'],str):raise ValueError('Reset requires a challenge case ID')
+    challenges.reset(body['case']);return reply(200,{'reset':True})
+   challenge_match=re.fullmatch(r'/academy/challenges/([a-z-]+)/(vulnerable|fixed)',path)
+   if challenge_match:
+    case,mode=challenge_match.groups()
+    if case not in CHALLENGE_CASES:return reply(404,{'error':{'message':'Unknown challenge'}})
+    if method=='GET':return reply(200,{'resource':deepcopy(challenges.state(case,mode)),'evidence':challenges.evidence(case)})
+    if method!='POST':return reply(405,{'error':{'message':'Use POST'}},{'Allow':'POST'})
+    headers={k.lower():v for k,v in request.get('headers',{}).items()}
+    if headers.get('content-type','application/json').split(';')[0].strip().lower()!='application/json':return reply(415,{'error':{'message':'Use application/json'}})
+    case,mode=challenge_match.groups();status,body=challenges.run(case,mode,request.get('input'));return reply(status,body)
+   return reply(404,{'error':{'message':'Unknown challenge route'}})
   if path=='/rooms/session':return reply(200,{'local':True})
   if path=='/academy/catalog':return reply(200,{'version':'0.3.0','cases':CATALOG})
   if path=='/academy/reset':
@@ -62,7 +82,7 @@ def invoke(raw):
 def dispatch_traced(request):
  import sys,os,linecache
  events=[];truncated=False;repeated_events={}
- allowed={'academy.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','academy_http.py'}
+ allowed={'challenges.py','academy.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','academy_http.py'}
  def observe(frame,event,arg):
   nonlocal truncated
   filename=os.path.basename(frame.f_code.co_filename)
