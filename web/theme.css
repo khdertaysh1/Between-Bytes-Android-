@@ -99,3 +99,15 @@ a.primary { display:inline-flex;align-items:center;justify-content:center;paddin
 @media(max-width:1150px) {
   .experience-v4 #cards { grid-template-columns:minmax(0,1fr); }
 }
+/* Home-page entry actions. */
+#account-open,#language,#overview #basics-start,#prepare-engine,#overview #resume-case,
+#student-path>a.primary {
+  background:#d8ecf4;
+  color:#1c2b48;
+  border-color:#d8ecf4;
+}
+#account-open:hover,#language:hover,#overview #basics-start:hover,#prepare-engine:hover,
+#overview #resume-case:hover,#student-path>a.primary:hover {
+  background:#d8ecf4;
+  color:#1c2b48;
+}
