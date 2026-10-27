@@ -39,6 +39,9 @@ jobs:
           node --check web/welcome.js
           node --check web/decision-view.js
           node --check web/challenges.js
+          node --check web/foundations.js
+          node --check web/foundations-model.js
+          node --check web/foundations-content.js
           node --check web/academy.js
           node --check web/studio.js
           node --check web/engine-worker.js

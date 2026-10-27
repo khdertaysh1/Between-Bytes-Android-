@@ -1,6 +1,6 @@
 'use strict';
 window.BBStudent=(()=>{
- const VERSION='0.15.0',MAX=1048576,$=id=>document.getElementById(id);
+ const VERSION='0.16.0',MAX=1048576,$=id=>document.getElementById(id);
  const copy=(lang,ar,en)=>lang==='en'?en:ar;
  const node=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
  const stages=[
@@ -20,7 +20,7 @@ window.BBStudent=(()=>{
  function render(catalog,lang,api){
   rows=catalog;language=lang;bridge=api;
   const host=$('student-path');if(!host)return;
-  const tx=(ar,en)=>copy(lang,ar,en);host.replaceChildren();
+  const tx=(ar,en)=>copy(lang,ar,en);host.replaceChildren();const basics={'basics-optional':tx('اختياري · للمبتدئ وللمراجعة','Optional · beginner lessons and refresher'),'basics-title':tx('إذا كنت بحاجة إلى الأساسيات قبل البدء، فهذا تذكير بالأساسيات.','Need the basics before starting? Here is a refresher.'),'basics-copy':tx('شرح من الصفر وتجارب صغيرة لفهم الطلبات والبيانات والجلسات قبل أول مختبر. إذا كنت تعرفها، تابع مباشرةً إلى المختبرات.','Start from zero with small exercises on requests, data and sessions. If you know these concepts, continue directly to labs.'),'basics-start':tx('راجع الأساسيات من الصفر','Review the basics from zero'),'basics-skip':tx('لدي خبرة · تابع إلى المختبرات ←','I have experience · continue to labs →'),'labs':tx('اختر مختبراً','Choose a lab')};for(const [id,text]of Object.entries(basics))if($(id))$(id).textContent=text;if($('basics-start'))$('basics-start').href='./foundations.html'+(lang==='en'?'?lang=en':'');
   host.append(node('h2',tx('ابدأ من هون','Start here')),node('p',tx('أول مرة؟ تعلّم الإرسال والتعديل والمقارنة بتجربة موجهة من 5–10 دقائق. كل المختبرات تبقى مفتوحة.','First visit? Learn to send, edit and compare in a guided 5–10 minute exercise. Every lab stays open.')));
   const welcome=node('a',tx('ابدأ التدريب التفاعلي ←','Start the interactive introduction →'));welcome.href='./welcome.html'+(lang==='en'?'?lang=en':'');welcome.className='primary';host.append(welcome);const challenges=node('a',tx('اختبر فهمك بالتحديات المستقلة ←','Test your understanding with independent challenges →'));challenges.href='./challenges.html'+(lang==='en'?'?lang=en':'');challenges.className='student-challenge-link';host.append(challenges);
   const list=node('ol');list.className='student-stages';
