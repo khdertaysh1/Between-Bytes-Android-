@@ -40,6 +40,8 @@ test('all 108 cases mount all tabs and submit a fresh fixed control through thei
   const evidence=invoke({path:'/academy/evidence?case='+row.id+'&mode=fixed'}).body;
   if(error||(!evidence.legitimate&&row.group!=='xss'))failures.push({id:row.id,error,status:evidence.status,body:evidence});
   assert.ok(ui.d.getElementById('learner-code'),row.id+' code workspace');assert.ok(ui.d.getElementById('flow-source'),row.id+' actual source');if(row.group!=='xss'){assert.ok(ui.d.getElementById('flow-step').options.length>0,row.id+' interpreter trace');assert.match(ui.d.getElementById('flow-request').textContent,/POST/);}
+  assert.equal(ui.d.querySelector('[data-logic-mode=fixed]').dataset.selected,'true',row.id+' selected fixed logic');
+  assert.equal(ui.d.querySelector('[data-logic-mode=fixed] pre').textContent.trim(),row.lesson.fixed_code.trim(),row.id+' fixed teaching source');
   for(const id of ['service-ui','checks','response','studio-form'])assert.equal(ui.d.querySelectorAll('#'+id).length,1,row.id+' duplicate '+id);
  }
  assert.deepEqual(failures,[]);assert.deepEqual(ui.errors.map(e=>e.message),[]);
@@ -93,6 +95,10 @@ test('all 96 non-browser cases reproduce impact and matching fixed protection th
   assert.equal(ui.d.getElementById('service-effect').dataset.state,'impact',row.id+' weak visible impact');assert.equal(ui.d.getElementById('service-effect').dataset.mode,'vulnerable');const weakView=ui.d.getElementById('service-effect').querySelector('.result-content').textContent;
   ui.variant('fixed');assert.equal(ui.d.getElementById('service-effect').dataset.state,'waiting');assert.deepEqual(JSON.parse(ui.d.getElementById('input').value),row.attack);edit(row.attack);await ui.submit('studio-submit');const fixed=invoke({path:'/academy/evidence?case='+row.id+'&mode=fixed'}).body;
   assert.equal(ui.d.getElementById('service-effect').dataset.state,'protected',row.id+' fixed visible rejection');assert.equal(ui.d.getElementById('service-effect').dataset.mode,'fixed');assert.notEqual(ui.d.getElementById('service-effect').querySelector('.result-content').textContent,weakView,row.id+' different rendered result');assert.equal(ui.d.getElementById('response-comparison').hidden,false);assert.equal(ui.d.querySelectorAll('[data-comparison-mode] [data-result-key], [data-comparison-mode] dd').length>0,true,row.id+' real response comparison');
+  assert.equal(ui.d.getElementById('site-comparison').open,true,row.id+' comparison opens after both actual submissions');
+  assert.ok(ui.d.querySelectorAll('[data-diff-path]').length>0,row.id+' actual business-data differences');
+  for(const mode of ['vulnerable','fixed'])assert.equal(ui.d.querySelector('[data-code-mode='+mode+'] pre').textContent.trim(),row.lesson[mode==='fixed'?'fixed_code':'bad_code'].trim(),row.id+' '+mode+' teaching code');
+  assert.match(ui.d.querySelector('.comparison-http').textContent,/x-request-id/,row.id+' actual response headers');
   if(!weak.impact||!fixed.protected||!fixed.flag)failures.push({id:row.id,weak:weak.status,fixed:fixed.status,error:ui.d.getElementById('service-error').textContent});
   assert.deepEqual(JSON.parse(ui.d.getElementById('input').value),row.attack,row.id+' typed interceptor');
  }
@@ -114,6 +120,17 @@ test('MFA fixed application denies generic active sessions and displays only com
    assert.match(ui.d.getElementById('service-response').textContent,allowed?/200/:/403/,session+' response');
   }
  }finally{ui.dom.window.close();}
+});
+test('directory, diagnostic and client-key disclosure pages show returned fields and hide them on denial',async()=>{
+ const ui=await workspace();try{for(const [id,visible] of [['disclosure-listing','billing-demo.csv'],['disclosure-trace','/srv/northstar/accounts.py:42'],['disclosure-apikey','DEMO_INERT_SERVER_ONLY_KEY']]){
+  const row=cases.find(c=>c.id===id);await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset '+id);ui.d.getElementById('input').value=JSON.stringify(row.attack);ui.variant('vulnerable');await ui.submit('service-submit');assert.ok(ui.d.getElementById('site-business-result').textContent.includes(visible),id+' actual disclosed content');
+  ui.variant('fixed');await ui.submit('service-submit');assert.equal(ui.d.getElementById('site-business-result').textContent.includes(visible),false,id+' no denied content');assert.equal(ui.d.getElementById('virtual-page').dataset.outcome,'protected');
+ }}finally{ui.dom.window.close();}
+});
+test('payment page shows independently read state for coupon, gift, replay and subscription outcomes',async()=>{
+ const ui=await workspace();try{for(const [id,label] of [['pay-coupon-reuse','WELCOME'],['pay-gift','gift_alice'],['pay-replay','تم تجاهل إعادة التنفيذ'],['pay-trial','premium']]){
+  const row=cases.find(c=>c.id===id);await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset '+id);ui.d.getElementById('input').value=JSON.stringify(row.attack);ui.variant('vulnerable');await ui.submit('service-submit');assert.ok(ui.d.getElementById('site-business-result').textContent.includes(label),id+' resource state');assert.ok(ui.d.querySelector('.readback-caption'),id+' independent readback label');ui.variant('fixed');await ui.submit('service-submit');assert.ok(ui.d.querySelector('[data-diff-path^="GET.resource"]'),id+' saved state comparison');
+ }}finally{ui.dom.window.close();}
 });
 test('paired replay sends the current body to the other variant and reset clears comparison',async()=>{
  const ui=await workspace();try{const row=cases.find(c=>c.id==='acl-read');await ui.go(row);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');ui.d.getElementById('input').value=JSON.stringify(row.attack);ui.variant('vulnerable');await ui.submit('service-submit');await ui.submit('compare-replay');assert.equal(ui.d.getElementById('studio-mode').value,'fixed');assert.equal(ui.d.querySelector('[data-comparison-mode=vulnerable]').dataset.state,'impact');assert.equal(ui.d.querySelector('[data-comparison-mode=fixed]').dataset.state,'protected');ui.d.querySelector('[data-service-field=object]').value='a-1';ui.d.querySelector('[data-service-field=object]').dispatchEvent(new ui.w.Event('input'));assert.equal(ui.d.getElementById('response-comparison').hidden,true);ui.click('reset');await until(()=>!ui.d.getElementById('service-submit').disabled,'reset');assert.equal(ui.d.getElementById('response-comparison').hidden,true);}

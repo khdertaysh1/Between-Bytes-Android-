@@ -113,10 +113,10 @@ async function send(){
   const evidence=await fetch('/academy/evidence?'+new URLSearchParams({case:id,mode}));const result=await evidence.json();
   if(result.request_id!==wire.headers.get('x-request-id'))throw new Error('Evidence changed in another tab; send the request again.');
   if(ticket!==sequence||current?.id!==id)return;
-  window.BBTelemetry?.attempt(id,mode,wire.status);result.http_status=wire.status;result.response_body=body;BBStudio.assessment(result);
+  window.BBTelemetry?.attempt(id,mode,wire.status);result.http_status=wire.status;result.http_headers=headers;result.response_body=body;BBStudio.assessment(result);
   if(current.group==='payment'&&mode==='vulnerable'&&result.impact)$('decision-note').textContent=t('weakAccepted');
   history.push({input,http:{path,method:'POST',status:wire.status,headers,body},assessment:result});history=history.slice(-30);
-  if(current.group==='payment'){const data=await readback(mode);if(ticket!==sequence)return;if(data)checkoutSummary(data,body);}
+  if(current.group==='payment'){const data=await readback(mode);if(ticket!==sequence)return;if(data){result.resource_readback=data;BBStudio.assessment(result);checkoutSummary(data,body);}}
   else {summary(result);if(body.error)$('result-summary').prepend(node('p',body.error.code+' · '+body.error.message,'business-error'));}
   if(result.preview){
    preview={ticket,token:result.token,mode,input:JSON.stringify(input),executed:false,rendered:false};const html=await window.BBEngine.preview(result.token);if(ticket!==sequence)return;BBStudio.documentSource(html);$('preview').srcdoc=html;$('preview').hidden=false;$('browser-evidence').textContent=t('previewWait');
