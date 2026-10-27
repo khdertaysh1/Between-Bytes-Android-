@@ -1,4 +1,6 @@
-# Between Bytes Academy · Web 0.15.0 / Android 0.3.0
+# Between Bytes Academy · Web 0.16.0 / Android 0.3.0
+
+قسم تذكير اختياري بالأساسيات للمبتدئين مع متابعة مباشرة للمختبرات: [تفاصيل Web 0.16.0](docs/FOUNDATIONS_WEB_016.md). لا يشترط إنهاء الدروس ولا يمنح شهادات.
 
 إصلاح ظهور منطق ما بعد الإصلاح وثلاثة تحديات مستقلة بصفحات تطبيق واعتراض طلبات: [تفاصيل Web 0.15.0](docs/REPAIR_AND_CAPSTONES_WEB_015.md).
 
