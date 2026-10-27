@@ -60,13 +60,19 @@ def invoke(raw):
 
 # Optional teaching trace. These are actual interpreter events, not inferred steps.
 def dispatch_traced(request):
- import sys,os
- events=[];truncated=False
+ import sys,os,linecache
+ events=[];truncated=False;repeated_events={}
  allowed={'academy.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','academy_http.py'}
  def observe(frame,event,arg):
   nonlocal truncated
   filename=os.path.basename(frame.f_code.co_filename)
   if filename not in allowed or event not in {'line','return'}:return observe
+  # Preserve the business decision: recursive string validation must not use
+  # the entire trace budget before the selected handler is reached.
+  function=frame.f_code.co_name
+  if function in {'validate_strings','<genexpr>','<listcomp>','<dictcomp>'}:
+   key=(filename,function);repeated_events[key]=repeated_events.get(key,0)+1
+   if repeated_events[key]>12:truncated=True;return observe
   if len(events)>=180:truncated=True;return observe
   values={}
   for key,value in list(frame.f_locals.items()):
@@ -75,7 +81,7 @@ def dispatch_traced(request):
     try:values[key]=repr(value)[:360]
     except Exception:pass
    if len(values)>=8:break
-  events.append({'file':filename,'line':frame.f_lineno,'function':frame.f_code.co_name,'event':event,'values':values,**({'return':repr(arg)[:500]} if event=='return' else {})})
+  events.append({'file':filename,'line':frame.f_lineno,'function':frame.f_code.co_name,'event':event,'source':linecache.getline(frame.f_code.co_filename,frame.f_lineno).rstrip('\n'),'values':values,**({'return':repr(arg)[:500]} if event=='return' else {})})
   return observe
  previous=sys.gettrace()
  try:
