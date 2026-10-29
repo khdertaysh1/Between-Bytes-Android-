@@ -1,0 +1,2 @@
+'use strict';
+(()=>{const ids=['acl-read','acl-write','acl-delete','acl-nested','acl-tenant','acl-batch','acl-export','acl-download','acl-role','acl-mass'];const id=location.hash.slice(1);const url=new URL('./index.html',location.href);const lang=new URLSearchParams(location.search).get('lang');if(lang==='ar'||lang==='en')url.searchParams.set('lang',lang);url.hash='/access/'+(ids.includes(id)?id:'acl-read');location.replace(url.href);})();
