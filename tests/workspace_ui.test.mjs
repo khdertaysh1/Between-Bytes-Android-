@@ -215,3 +215,7 @@ test('storage failure warns and the backup still captures in-memory drafts and n
 test('optional foundations invitation lets experienced students jump directly to all labs without completing any lesson',async()=>{
  const ui=await workspace();try{assert.equal(ui.d.getElementById('basics-start').getAttribute('href'),'./foundations.html');assert.match(ui.d.getElementById('basics-title').textContent,/تذكير بالأساسيات/);ui.d.getElementById('basics-skip').click();await until(()=>ui.d.activeElement.id==='labs','direct labs focus');assert.equal(ui.d.querySelectorAll('.lab-card').length,15);assert.equal(ui.d.getElementById('overview').hidden,false);assert.equal(ui.w.localStorage.getItem('bb-foundations-v1'),null);await ui.go(cases[0]);assert.equal(ui.d.getElementById('room').hidden,false);assert.deepEqual(ui.errors.map(e=>e.message),[]);}finally{ui.dom.window.close();}
 });
+
+test('null request in a rate lab cannot strand the send button and a subsequent control works',async()=>{
+ const ui=await workspace();try{await ui.go(cases.find(c=>c.id==='rate-xff'));ui.d.getElementById('input').value='null';ui.click('send');await until(()=>!ui.d.getElementById('send').disabled,'invalid request released');assert.ok(ui.d.getElementById('error').textContent||ui.d.getElementById('response').textContent.includes('400'));ui.click('normal');await ui.submit('send');assert.equal(ui.d.getElementById('send').disabled,false);assert.deepEqual(ui.errors.map(e=>e.message),[]);}finally{ui.w.close();}
+});

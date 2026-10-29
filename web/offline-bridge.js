@@ -9,7 +9,7 @@ window.BBEngine=(()=>{
  worker.onerror=()=>{if(worker===active)abort('تعذر تشغيل محرك المختبر. تحقق من اكتمال التحميل أو تحديث Android System WebView.');};
  }
  function call(request){ensure();const id=++serial;return new Promise((resolve,reject)=>{const timer=setTimeout(()=>abort('انتهت مهلة تشغيل المحرك.'),60000);requests.set(id,{resolve,reject,timer});worker.postMessage({id,request});});}
- const labels={200:'OK',201:'Created',207:'Multi-Status',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',405:'Method Not Allowed',415:'Unsupported Media Type',422:'Unprocessable Content',429:'Too Many Requests'};
+ const labels={200:'OK',201:'Created',207:'Multi-Status',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',405:'Method Not Allowed',409:'Conflict',415:'Unsupported Media Type',422:'Unprocessable Content',429:'Too Many Requests'};
  async function transport(path,options={}){
   const url=new URL(path,document.baseURI);if(url.origin===location.origin&&url.pathname.startsWith('/studio/'))return nativeFetch(path,options);
   if(path==='/rooms/session')return new Response('{"local":true}',{headers:{'Content-Type':'application/json'}});

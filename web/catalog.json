@@ -2041,7 +2041,7 @@
           "story": "قد يرسل المتصفح OPTIONS قبل الطلب الذي يحمل رأساً مخصصاً. يجب أن يتفق قرار الطلب التمهيدي والاستجابة الفعلية على الأصول المسموحة.",
           "cause": "تسمح النسخة الضعيفة للأصل غير الموثوق في الطلب التمهيدي ثم تكرر السماح في الاستجابة الخاصة.",
           "fix": "قارن الأصل كاملاً بقائمة سماح محددة، واسمح ببيانات الجلسة عند الحاجة فقط. طبّق القرار نفسه على الطلب التمهيدي والفعلي، وأضف Vary: Origin للاستجابات المتغيرة.",
-          "interpretation": "راقب response_headers وreadable وprivate. قد يبقى HTTP 200 في النسختين؛ الفرق هو السماح للصفحة الأخرى بقراءة الجسم. هذه نتيجة نموذج سياسة CORS وليست تجربة متصفح عبر أصلين. الرأس Origin داخل JSON يمثل مدخلاً تدريبياً ولا يغيّر أصل طلب المتصفح الحقيقي.",
+          "interpretation": "راقب preflight ثم actual_request_sent: رفض OPTIONS يعني أن المتصفح لا يرسل GET، لذلك تكون http_status_of_fixture_get فارغة (null)، ولا توجد استجابة فعلية. عند السماح، يرسل GET؛ غياب الجلسة يعيد 401 دون بيانات خاصة. الطلب التمهيدي نفسه لا يحمل الجلسة. مع credentials يجب إرجاع أصل محدد، وليس *. رمز 200 الخارجي يخص المحاكي، وليس دليلاً على إرسال GET. هذه محاكاة سياسة وليست تجربة متصفح عبر أصلين؛ Origin داخل JSON مدخل تدريبي فقط.",
           "normal": {
             "origin": "https://app.lab",
             "credentials": true
@@ -2050,8 +2050,8 @@
             "origin": "https://untrusted.lab",
             "credentials": true
           },
-          "bad_code": "allow_preflight(origin=\"*\")\nreflect_origin_on_private_response()",
-          "fixed_code": "allow = origin in {\"https://app.lab\"}\nif allow:\n    set_header(\"Access-Control-Allow-Origin\", origin)\n    set_header(\"Access-Control-Allow-Credentials\", \"true\")\nset_header(\"Vary\", \"Origin\")"
+          "bad_code": "allow_preflight(origin=origin, credentials=True, methods=[\"GET\"], headers=[\"X-Lab-Request\"])\nreflect_origin_on_private_response()",
+          "fixed_code": "allow = origin == \"https://app.lab\"\nif request.method == \"OPTIONS\":\n    if not allow: return response(403)\n    return preflight_response(204, origin=origin, credentials=True, methods=[\"GET\"], headers=[\"X-Lab-Request\"], vary=\"Origin\")\nrequire_session()\nif allow:\n    set_header(\"Access-Control-Allow-Origin\", origin)\n    set_header(\"Access-Control-Allow-Credentials\", \"true\")\nset_header(\"Vary\", \"Origin\")"
         }
       ],
       "quiz": [

@@ -80,7 +80,7 @@ function summary(result){
 }
 
 function endpoint(){return '/academy/api/'+current.group+'/'+current.id+'/'+$('mode').value;}
-function requestHeaders(input){const headers={'Content-Type':'application/json'};if(current.group==='rate'&&typeof input.source==='string')headers['X-Forwarded-For']=input.source;return BBStudio.headers()||headers;}
+function requestHeaders(input){const headers={'Content-Type':'application/json'};if(current.group==='rate'&&input&&typeof input.source==='string')headers['X-Forwarded-For']=input.source;return BBStudio.headers()||headers;}
 function updateWire(){if(!current)return;let input;try{input=JSON.parse($('input').value);}catch(_){input={};}const headers=requestHeaders(input);$('wire-request').textContent='POST '+endpoint()+' HTTP/1.1\nHost: '+location.host+'\n'+Object.entries(headers).map(([k,v])=>k+': '+v).join('\n')+'\n\n'+$('input').value;}
 async function readback(mode=$('mode').value){
  if(!current||current.group!=='payment')return null;const id=current.id,ticket=sequence;
@@ -103,8 +103,9 @@ function setBusy(value){
  busy=value;BBStudio.busy(value);for(const id of ['send','mode','normal','sample','payload-choice','input','reset','language','readback'])$(id).disabled=value;
 }
 async function send(){
- if(busy||!current)return;setBusy(true);$('error').textContent='';const id=current.id,mode=$('mode').value;const ticket=++sequence;preview=null;$('preview').hidden=true;$('preview').removeAttribute('src');$('preview').removeAttribute('srcdoc');$('browser-evidence').textContent='';$('decision-note').textContent='';$('http-status').textContent='';$('response').textContent='{}';updateWire();
+ if(busy||!current)return;setBusy(true);$('error').textContent='';const id=current.id,mode=$('mode').value;const ticket=++sequence;preview=null;$('preview').hidden=true;$('preview').removeAttribute('src');$('preview').removeAttribute('srcdoc');$('browser-evidence').textContent='';$('decision-note').textContent='';$('http-status').textContent='';$('response').textContent='{}';
  try{
+  updateWire();
   const input=JSON.parse($('input').value);const path=endpoint();const started=performance.now();const sentHeaders=requestHeaders(input);const wire=await fetch(path,{method:'POST',headers:sentHeaders,body:JSON.stringify(input)});const body=await wire.json();
   if(ticket===sequence&&current?.id===id)BBStudio.record({case:id,mode,input,path,headers:sentHeaders,status:wire.status,method:'POST',body,trace:wire.bbTrace,duration:Math.round(performance.now()-started)});
   if(ticket!==sequence||current?.id!==id)return;
