@@ -103,7 +103,7 @@ class Academy:
             self.previews[token] = (case, mode, state.get('comment', value), token)
             while len(self.previews) > 80:
                 self.previews.pop(next(iter(self.previews)))
-            result = {'status': 200, 'preview': '/academy/preview/' + token,
+            result = {'status': 201 if case == 'xss-stored' else 200, 'preview': '/academy/preview/' + token,
                       'token': token, 'verification': 'browser-assisted',
                       'impact': False, 'protected': False, 'legitimate': False,
                       'source': 'fragment' if case == 'xss-dom-fragment' else 'search' if case == 'xss-dom-query' else 'stored comment' if case == 'xss-stored' else 'value',

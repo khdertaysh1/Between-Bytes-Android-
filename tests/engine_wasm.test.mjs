@@ -157,3 +157,26 @@ test('CORS preflight blocks the actual request and declares credentialed permiss
  for(const r of [weak,control]){assert.equal(r.actual_request_sent,true);assert.equal(r.http_status_of_fixture_get,200);assert.equal(r.readable,true);assert.equal(r.preflight.response_headers['Access-Control-Allow-Methods'],'GET');assert.equal(r.preflight.response_headers['Access-Control-Allow-Headers'],'X-Lab-Request');assert.equal(r.preflight.response_headers['Access-Control-Allow-Credentials'],'true');assert.notEqual(r.preflight.response_headers['Access-Control-Allow-Origin'],'*');}
  assert.equal(anonymous.preflight.status,204);assert.equal(anonymous.http_status_of_fixture_get,401);assert.equal(anonymous.private,null);
 });
+
+test('all 108 cases enforce explicit HTTP contracts, reject malformed requests and correlate evidence',()=>{
+ const cases=JSON.parse(py.runPython('json.dumps(CATALOG)'));
+ const fixedStatuses={payment:{'pay-price':422,'pay-quantity':422,'pay-discount':422,'pay-coupon-reuse':207,'pay-currency':409,'pay-rounding':422,'pay-total':422,'pay-shipping':422,'pay-tax':422,'pay-status':409,'pay-webhook':401,'pay-binding':409,'pay-replay':200,'pay-refund':409,'pay-gift':207,'pay-trial':409},code:{'code-sqli':200,'code-template':200,'code-nosql':422,'code-ssrf':403,'code-redirect':403},csrf:{'csrf-get':405,'csrf-content-type':415},upload:{'upload-path':403,'upload-overwrite':403},disclosure:{'disclosure-apikey':200},authentication:{'authentication-mfa':403}};
+ const defaults={access:403,rate:429,xss:200,ssrf:403,redirect:403,csrf:403,cors:200,upload:415,traversal:403,disclosure:404,authentication:401,jwt:401,assignment:403};
+ const call=(row,mode,input)=>invoke({path:`/academy/api/${row.group}/${row.id}/${mode}`,method:'POST',input});
+ for(const row of cases){
+  invoke({path:'/academy/reset',fields:{case:row.id}});
+  for(const input of [null,[],{}, {...row.normal,unsupported_field:1}]){const r=call(row,'fixed',input);assert.equal(r.status,400,row.id+' malformed request');assert.equal(r.body.error.code,'invalid_request');assert.equal(r.headers['X-Request-ID'],undefined);}
+  assert.equal(invoke({path:`/academy/evidence?case=${row.id}&mode=fixed`}).body.request_id,undefined,row.id+' invalid request cannot create success evidence');
+  const initialControl=call(row,'fixed',row.normal);assert.equal(initialControl.status,row.group==='rate'?(row.normal.attempts>3?429:401):row.group==='upload'||row.id==='xss-stored'?201:200,row.id+' legitimate control');
+  invoke({path:'/academy/reset',fields:{case:row.id}});
+  if(row.group==='rate')for(const mode of ['vulnerable','fixed'])call(row,mode,row.normal);
+  for(const mode of ['vulnerable','fixed']){
+   const r=call(row,mode,row.attack),e=invoke({path:`/academy/evidence?case=${row.id}&mode=${mode}`}).body;
+   const expected=mode==='vulnerable'?(row.group==='rate'?(row.id==='rate-ip-pool'?429:401):row.group==='upload'||row.id==='xss-stored'?201:200):(row.id==='xss-stored'?201:fixedStatuses[row.group]?.[row.id]??defaults[row.group]);
+   assert.notEqual(expected,undefined,row.id+' has a deliberate HTTP contract');assert.equal(r.status,expected,row.id+' '+mode);assert.equal(e.status,r.status,row.id+' evidence uses actual operation status');assert.equal(e.request_id,r.headers['X-Request-ID']);assert.equal(e.request_id,r.body.request_id);
+   if(row.group!=='xss')assert.equal(mode==='fixed'?e.protected:e.impact,true,row.id+' actual effect');
+   if(r.status>=400)assert.ok(r.body.error?.code,row.id+' structured rejection');
+   if(row.group==='payment'){const read=invoke({path:`/academy/resource?case=${row.id}&mode=${mode}`});assert.equal(read.status,200,row.id+' readback is a separate successful GET, even after rejected POST');}
+  }
+ }
+});
