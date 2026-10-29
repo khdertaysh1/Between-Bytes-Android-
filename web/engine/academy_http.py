@@ -51,7 +51,6 @@ def response(academy,case,mode,result):
         # A bounded batch summarizes the per-attempt statuses; no credentials are guessed.
         payload['attempts']={'checked':result['accepted_failed_attempts'],'throttled':result['blocked'],'operations':[{'status':401} for _ in range(result['accepted_failed_attempts'])]+[{'status':429} for _ in range(result['blocked'])]}
     elif case.startswith('xss-'):
-        if case=='xss-stored':status=201
         payload={'data':{'preview_url':result['preview'],'source':result['source'],'stored':case=='xss-stored'}}
     elif case.startswith('csrf-'):
         if status>=400:

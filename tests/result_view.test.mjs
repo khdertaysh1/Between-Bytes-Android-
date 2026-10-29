@@ -41,3 +41,17 @@ test('executed source panels show interpreter records rather than substituting t
   assert.match(out.querySelector('[data-executed-mode=fixed]').textContent,/allowed = trusted/);assert.match(out.querySelector('[data-executed-mode=vulnerable]').textContent,/allowed = weak_allowed/);assert.ok(out.querySelector('[data-source-line="request_security.py:42"]'));assert.doesNotMatch(out.querySelector('.actual-code-comparison').textContent,/validate\(input\)/);
  }finally{dom.window.close();}
 });
+
+test('visible HTTP explanations distinguish control, rejection, safe 200, partial batches and CORS preflight',()=>{
+ const dom=new JSDOM('<section id="out"></section>',{runScripts:'outside-only'});dom.window.eval(source);const view=dom.window.BBResultView;
+ try{
+  for(const lang of ['en','ar'])for(const [group,id,r,expected] of [
+   ['payment','pay-price',result('fixed',{}, {http_status:422,protected:true}),lang==='en'?/values violate/:/تخالف قواعد/],
+   ['payment','pay-price',result('fixed',{}, {legitimate:true}),lang==='en'?/both variants/:/النسختين/],
+   ['code','code-sqli',result('fixed',{}, {protected:true}),lang==='en'?/handled safely/:/بأمان/],
+   ['payment','pay-gift',result('fixed',{}, {http_status:207,protected:true}),lang==='en'?/Partial batch/:/جزئية/],
+   ['cors','cors-preflight',result('fixed',{actual_request_sent:false},{protected:true}),lang==='en'?/no resource GET/:/لم يُرسل GET/],
+   ['xss','xss-html',result('fixed',{}, {preview:'/fixture'}),lang==='en'?/not that JavaScript executed/:/لا يثبت تنفيذ/]
+  ]){const out=dom.window.document.getElementById('out');view.draw(out,r,{group,id},lang);assert.match(out.querySelector('.http-explanation').textContent,expected);}
+ }finally{dom.window.close();}
+});
