@@ -153,16 +153,18 @@ def cors(case,fixed,d):
         'cors-preflight':True,
     }[case]
     allowed=trusted if fixed else weak_allowed
-    # Private endpoint always checks the session, separately from CORS.
-    if not credentials:
-        return outcome(401,{'response_headers':{},'readable':False,'private':None,'model':'CORS policy simulation; browser execution not tested'})
     headers={'Vary':'Origin'}
     if allowed:headers.update({'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Credentials':'true'})
     preflight=None
     if case=='cors-preflight':
-        preflight={'status':204 if allowed else 403,'requested_method':'GET','requested_headers':'X-Lab-Request','allowed':allowed}
-    # A simple GET may return 200 even when its response cannot be read by another origin.
-    status=200
-    readable=allowed and (preflight is None or preflight['allowed'])
-    data={'response_headers':headers,'http_status_of_fixture_get':200,'readable':readable,'private':'DEMO_PRIVATE_CORS_DATA' if readable else None,'preflight':preflight,'model':'CORS policy simulation; supplied Origin is not a browser header; no cross-origin browser proof'}
-    return outcome(status,data,not trusted and readable and not fixed,not trusted and not readable and fixed,trusted and readable and fixed)
+        preflight_headers=dict(headers)
+        if allowed:preflight_headers.update({'Access-Control-Allow-Methods':'GET','Access-Control-Allow-Headers':'X-Lab-Request'})
+        preflight={'status':204 if allowed else 403,'requested_method':'GET','requested_headers':'X-Lab-Request','allowed':allowed,'response_headers':preflight_headers}
+    # OPTIONS carries no session. Only an allowed preflight dispatches the actual GET.
+    sent=preflight is None or preflight['allowed']
+    get_status=(200 if credentials else 401) if sent else None
+    readable=bool(sent and allowed and credentials)
+    data={'response_headers':headers if sent else {},'actual_request_sent':sent,'http_status_of_fixture_get':get_status,'readable':readable,'private':'DEMO_PRIVATE_CORS_DATA' if readable else None,'preflight':preflight,'model':'CORS policy simulation; supplied Origin is not a browser header; no cross-origin browser proof'}
+    # The outer status belongs to the simulator; null means no fixture GET occurred.
+    status=401 if get_status==401 else 200
+    return outcome(status,data,not trusted and readable and not fixed,credentials and not trusted and not readable and fixed,trusted and readable and fixed)

@@ -149,3 +149,11 @@ test('redirect origin classification handles protocol/default ports and fixed tr
  assert.equal(call('vulnerable','https://app.lab:0/account').body.data.external,true);
  for(const next of ['/account','https://outside.example/landing']){const r=call('fixed',next);assert.ok(r.body.data.trace.some(e=>e.step==='fixed validation'));assert.equal(r.body.data.trace.some(e=>e.step==='weak validation'),false);}
 });
+
+test('CORS preflight blocks the actual request and declares credentialed permission explicitly',()=>{
+ const results=JSON.parse(py.runPython(`json.dumps([Academy().run('cors-preflight', mode, {'origin': origin, 'credentials': credentials})['data'] for mode, origin, credentials in [('fixed','https://untrusted.lab',True),('vulnerable','https://untrusted.lab',True),('fixed','https://app.lab',True),('fixed','https://app.lab',False)]])`));
+ const [blocked,weak,control,anonymous]=results;
+ assert.equal(blocked.actual_request_sent,false);assert.equal(blocked.http_status_of_fixture_get,null);assert.deepEqual(blocked.response_headers,{});assert.equal(blocked.preflight.status,403);
+ for(const r of [weak,control]){assert.equal(r.actual_request_sent,true);assert.equal(r.http_status_of_fixture_get,200);assert.equal(r.readable,true);assert.equal(r.preflight.response_headers['Access-Control-Allow-Methods'],'GET');assert.equal(r.preflight.response_headers['Access-Control-Allow-Headers'],'X-Lab-Request');assert.equal(r.preflight.response_headers['Access-Control-Allow-Credentials'],'true');assert.notEqual(r.preflight.response_headers['Access-Control-Allow-Origin'],'*');}
+ assert.equal(anonymous.preflight.status,204);assert.equal(anonymous.http_status_of_fixture_get,401);assert.equal(anonymous.private,null);
+});

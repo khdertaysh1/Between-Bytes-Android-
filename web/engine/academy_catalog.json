@@ -3401,11 +3401,11 @@
         "en": "A custom header can cause an OPTIONS preflight. The preflight policy and actual response must agree on allowed origins."
       },
       "interpretation": {
-        "ar": "راقب response_headers وreadable وprivate. قد يبقى HTTP 200 في النسختين؛ الفرق هو السماح للصفحة الأخرى بقراءة الجسم. هذه نتيجة نموذج سياسة CORS وليست تجربة متصفح عبر أصلين. الرأس Origin داخل JSON يمثل مدخلاً تدريبياً ولا يغيّر أصل طلب المتصفح الحقيقي.",
-        "en": "Inspect response_headers, readable and private. HTTP can remain 200 in both variants; what changes is permission for another origin to read the body. This is a CORS policy model, not a two-origin browser test. Origin in JSON is a fixture input and does not change the real browser request origin."
+        "ar": "راقب preflight ثم actual_request_sent: رفض OPTIONS يعني أن المتصفح لا يرسل GET، لذلك تكون http_status_of_fixture_get فارغة (null)، ولا توجد استجابة فعلية. عند السماح، يرسل GET؛ غياب الجلسة يعيد 401 دون بيانات خاصة. الطلب التمهيدي نفسه لا يحمل الجلسة. مع credentials يجب إرجاع أصل محدد، وليس *. رمز 200 الخارجي يخص المحاكي، وليس دليلاً على إرسال GET. هذه محاكاة سياسة وليست تجربة متصفح عبر أصلين؛ Origin داخل JSON مدخل تدريبي فقط.",
+        "en": "Inspect preflight then actual_request_sent: a rejected OPTIONS prevents GET, so http_status_of_fixture_get is null and there is no actual response. An allowed preflight sends GET; a missing session returns 401 without private data. OPTIONS itself carries no session. Credentialed permission requires an explicit origin, not *. The outer 200 belongs to the simulator and does not prove GET was sent. This is a policy simulation, not a two-origin browser test; Origin in JSON is only a fixture input."
       },
-      "bad_code": "allow_preflight(origin=\"*\")\nreflect_origin_on_private_response()",
-      "fixed_code": "allow = origin in {\"https://app.lab\"}\nif allow:\n    set_header(\"Access-Control-Allow-Origin\", origin)\n    set_header(\"Access-Control-Allow-Credentials\", \"true\")\nset_header(\"Vary\", \"Origin\")",
+      "bad_code": "allow_preflight(origin=origin, credentials=True, methods=[\"GET\"], headers=[\"X-Lab-Request\"])\nreflect_origin_on_private_response()",
+      "fixed_code": "allow = origin == \"https://app.lab\"\nif request.method == \"OPTIONS\":\n    if not allow: return response(403)\n    return preflight_response(204, origin=origin, credentials=True, methods=[\"GET\"], headers=[\"X-Lab-Request\"], vary=\"Origin\")\nrequire_session()\nif allow:\n    set_header(\"Access-Control-Allow-Origin\", origin)\n    set_header(\"Access-Control-Allow-Credentials\", \"true\")\nset_header(\"Vary\", \"Origin\")",
       "steps": [
         {
           "ar": "حمّل الطلب السليم وشغّله في النسخة المُصلحة. اقرأ النتيجة قبل تغيير أي حقل.",

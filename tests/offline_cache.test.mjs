@@ -38,3 +38,10 @@ test('updated entry points bypass old bare-URL caches and precache every referen
 test('service connection configuration refreshes online rather than staying stuck on an unconfigured cached copy',async()=>{
  const s=setup();s.entries.set('https://academy.test/course/services-config.js?v=web9',new Response('old unconfigured'));s.online();assert.equal(await(await s.request('services-config.js?v=web9')).text(),'downloaded');assert.equal(s.calls.length,1);
 });
+
+test('local conflict responses preserve the HTTP status name and error body',async()=>{
+ const context={URL,URLSearchParams,Response,Headers,setTimeout,clearTimeout,location:{origin:'https://academy.test'},document:{baseURI:'https://academy.test/',documentElement:{dataset:{}},getElementById:()=>null,addEventListener:()=>{}},window:{fetch:async()=>{throw Error('Unexpected network request');}},Worker:class{postMessage({id}){queueMicrotask(()=>this.onmessage({data:{id,data:{status:409,headers:{'Content-Type':'application/json'},body:{error:{code:'conflict'}}}}}));}}};
+ vm.runInNewContext(await readFile(new URL('../web/offline-bridge.js',import.meta.url),'utf8'),context);
+ const response=await context.window.BBEngine.fetch('/academy/api/payment/pay-price/fixed',{method:'POST',body:'{}'});
+ assert.equal(response.status,409);assert.equal(response.statusText,'Conflict');assert.equal((await response.json()).error.code,'conflict');
+});
