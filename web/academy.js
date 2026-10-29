@@ -27,7 +27,7 @@ function renderCards(){
  for(const key of LABS){
   if(group!=='all'&&key!==group)continue;
   const all=catalog.filter(c=>c.group===key);const matches=all.filter(c=>(!$('unfinished-only').checked||!marks[c.id])&&[c.id,c.title.ar,c.title.en,c.cause.ar,c.cause.en].join(' ').toLowerCase().includes(query));if(!matches.length)continue;
-  const link=node('a',undefined,'lab-card scenario-card');link.href='#/'+key+'/'+matches[0].id;const top=node('div',undefined,'card-top');top.append(node('span',t('labPrefix')+' '+String(LABS.indexOf(key)+1).padStart(2,'0')),node('span',query?matches.length+' / '+all.length:all.length+' '+t('caseUnit')));
+  const link=node('a',undefined,'lab-card scenario-card');link.href=key==='payment'&&matches[0].id==='pay-price'?'./price-lesson.html?lang='+lang:'#/'+key+'/'+matches[0].id;const top=node('div',undefined,'card-top');top.append(node('span',t('labPrefix')+' '+String(LABS.indexOf(key)+1).padStart(2,'0')),node('span',query?matches.length+' / '+all.length:all.length+' '+t('caseUnit')));
   link.append(top,node('h2',t(key)),node('p',labCopy[key][lang==='ar'?0:1]));
   const examples=node('div',undefined,'lab-examples');for(const c of matches.slice(0,4))examples.append(node('span',c.title[lang]));link.append(examples);
   const bottom=node('div',undefined,'card-bottom');const progress=node('span',undefined,'lab-progress');const amount=node('b',all.filter(c=>marks[c.id]).length+' / '+all.length);amount.dir='ltr';progress.append(amount,node('span',t('completed')));bottom.append(progress,node('span',t('enterLab')+' →'));link.append(bottom);$('cards').append(link);count++;
