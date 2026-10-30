@@ -2,9 +2,10 @@
 import json, pathlib, random
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 NAMES={'payment':('منطق الدفع','Payment logic','◈'),'access':('التحكم بالوصول','Access control','⌘'),'rate':('حدود الاستخدام','Rate limiting','◷'),'xss':('أمن المتصفح وXSS','Browser security','◇'),'code':('حقن الأوامر والاستعلامات','Injection','⌁'),'ssrf':('طلبات الخادم SSRF','Server-side requests','◎'),'redirect':('إعادة التوجيه','Redirects','↗'),'csrf':('تزوير الطلبات CSRF','Request forgery','⤴'),'cors':('سياسة CORS','Cross-origin access','⊕'),'upload':('رفع الملفات','File uploads','↑'),'traversal':('اجتياز المسارات','Path traversal','⌇'),'disclosure':('كشف المعلومات','Information disclosure','▤'),'authentication':('المصادقة والجلسات','Authentication','▣'),'jwt':('JWT والتحقق من الرموز','JWT verification','◉'),'assignment':('حقول API الحساسة','Mass assignment','⊞')}
-ORDER=['access','xss','authentication','payment','rate','csrf','cors','ssrf','redirect','upload','traversal','disclosure','code','jwt','assignment']
+ORDER=['access','xss','authentication','payment','rate','csrf','cors','ssrf','redirect','upload','traversal','disclosure','code','jwt','assignment','race','oauth','cache','graphql','xml']
+NAMES.update({'race': ('سباقات الطلبات', 'Race conditions', '◇'), 'oauth': ('OAuth وربط الحسابات', 'OAuth & account linking', '◇'), 'cache': ('تسميم الكاش وخداعه', 'Cache poisoning & deception', '◇'), 'graphql': ('أمن GraphQL', 'GraphQL security', '◇'), 'xml': ('XML والكيانات الخارجية', 'XML & external entities', '◇')})
 def make():
-    rows=json.loads((ROOT/'shared/source-cases.json').read_text())+json.loads((ROOT/'web/engine/advanced_catalog.json').read_text())
+    rows=json.loads((ROOT/'shared/source-cases.json').read_text())+json.loads((ROOT/'web/engine/advanced_catalog.json').read_text())+json.loads((ROOT/'web/engine/extended_catalog.json').read_text())
     labs=[]
     intro=[('http','الطلب والاستجابة','المتصفح يرسل طلب HTTP والخادم يقرر الصلاحيات ويعيد الاستجابة. رمز 200 وحده لا يثبت وقوع أثر أمني.','تحقق من الحالة المخزنة والأثر الفعلي، وليس رمز الاستجابة وحده.'),('scope','النطاق والتصريح','قبل الاختبار حدّد الأصول والحسابات المسموح بها وحدود البرنامج.','اختبر حساباتك وبياناتك فقط ضمن تصريح واضح.'),('trust','حدود الثقة','كل قيمة من المتصفح قابلة للتعديل، حتى الحقول المخفية.','اجعل الخادم مصدر الحقيقة للأسعار والصلاحيات.'),('evidence','إثبات الأثر','قارن طلباً طبيعياً بطلب معدل مع تغيير عامل واحد، وسجّل حالة ما قبل وما بعد.','أثبت التغيير ببيانات اختبار تملكها، ثم أعد الحالة الأصلية.'),('fix','فهم الإصلاح','حجب زر في الواجهة لا يحمي API. الإصلاح يفرض القاعدة على الخادم.','أعد الطلب المخالف على النسخة المُصلحة وتأكد من رفضه دون تغيير الحالة.'),('report','كتابة التقرير','التقرير الجيد يشرح السبب وخطوات إعادة الإنتاج والأثر والإصلاح المقترح.','ميّز بين ملاحظة محتملة وأثر قابل لإعادة الإنتاج.')]
     cases=[{'id':'intro-'+i,'title':t,'story':s,'cause':s,'fix':f,'interpretation':'هذه أساسيات التحليل التي ستستخدمها في كل الحالات التالية.','normal':{},'attack':{},'bad_code':'# افتراضات غير موثوقة','fixed_code':'# تحقق من القاعدة والأثر على الخادم'} for i,t,s,f in intro]
@@ -31,5 +32,6 @@ def make():
     p=ROOT/'shared/catalog.json';p.write_text(json.dumps(out,ensure_ascii=False,indent=2))
     for dest in [ROOT/'web/catalog.json',ROOT/'app/src/main/assets/catalog.json']:
         dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(p.read_bytes())
+    (ROOT/'services/academy-api/cases.js').write_text('export const CASES='+json.dumps({r['id']:r['group'] for r in rows},separators=(',',':'))+';\n')
     print(f'{len(labs)} modules; {sum(len(x["cases"]) for x in labs)} guided cases; shared assets identical')
 if __name__=='__main__':make()

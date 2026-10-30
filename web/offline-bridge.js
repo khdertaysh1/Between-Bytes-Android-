@@ -4,7 +4,7 @@ window.BBEngine=(()=>{
  let worker=null,serial=0;const requests=new Map();
  const status=(message,phase='loading')=>{document.documentElement.dataset.runtimeState=phase;const target=document.getElementById('runtime-status');if(target){target.hidden=phase==='ready'||phase==='idle';target.textContent=message;target.dataset.phase=phase;}};
  function abort(message){worker?.terminate();worker=null;for(const item of requests.values()){clearTimeout(item.timer);item.reject(Error(message));}requests.clear();status(message+' أعد إرسال الطلب للمحاولة من جديد.','error');}
- function ensure(){if(worker)return;status('تجهيز التجربة لأول تشغيل…');worker=new Worker(new URL('./engine-worker.js?v=web15.0',document.baseURI),{type:'module'});
+ function ensure(){if(worker)return;status('تجهيز التجربة لأول تشغيل…');worker=new Worker(new URL('./engine-worker.js?v=web21.2',document.baseURI),{type:'module'});
  const active=worker;worker.onmessage=({data})=>{if(worker!==active)return;if(data.type==='progress'){status('تجهيز التجربة لأول تشغيل…');return;}if(data.type==='ready'){status('','ready');return;}const item=requests.get(data.id);if(!item)return;requests.delete(data.id);clearTimeout(item.timer);if(data.error){item.reject(Error(data.error));if(data.startup)abort('تعذر تجهيز التجربة. تحقق من الاتصال ثم أعد المحاولة.');}else{status('','ready');item.resolve(data.data);}};
  worker.onerror=()=>{if(worker===active)abort('تعذر تشغيل محرك المختبر. تحقق من اكتمال التحميل أو تحديث Android System WebView.');};
  }
@@ -13,7 +13,7 @@ window.BBEngine=(()=>{
  async function transport(path,options={}){
   const url=new URL(path,document.baseURI);if(url.origin===location.origin&&url.pathname.startsWith('/studio/'))return nativeFetch(path,options);
   if(path==='/rooms/session')return new Response('{"local":true}',{headers:{'Content-Type':'application/json'}});
-  if(path==='/academy/catalog'){const results=await Promise.all(['academy_catalog.json','resource_catalog.json','advanced_catalog.json'].map(file=>nativeFetch(new URL('./engine/'+file,document.baseURI)).then(r=>{if(!r.ok)throw Error('Content could not load');return r.json();})));return new Response(JSON.stringify({cases:results.flat()}),{headers:{'Content-Type':'application/json'}});}
+  if(path==='/academy/catalog'){const results=await Promise.all(['academy_catalog.json','resource_catalog.json','advanced_catalog.json','extended_catalog.json'].map(file=>nativeFetch(new URL('./engine/'+file+'?v=web21.2',document.baseURI)).then(r=>{if(!r.ok)throw Error('Content could not load');return r.json();})));return new Response(JSON.stringify({cases:results.flat()}),{headers:{'Content-Type':'application/json'}});}
   if(!String(path).startsWith('/academy/'))throw Error('Only local Academy routes are supported');
   const request={trace:options.trace===true||(String(path).startsWith('/academy/api/')&&!!document.getElementById('trace-enabled')?.checked),path,method:options.method||'GET',headers:Object.fromEntries(new Headers(options.headers||{}))};
   if(options.body instanceof URLSearchParams)request.fields=Object.fromEntries(options.body);else if(options.body){if(options.body.length>32768)throw Error('Request too large');try{request.input=JSON.parse(options.body);}catch{throw Error('JSON body is invalid');}}

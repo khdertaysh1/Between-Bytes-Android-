@@ -45,3 +45,9 @@ test('local conflict responses preserve the HTTP status name and error body',asy
  const response=await context.window.BBEngine.fetch('/academy/api/payment/pay-price/fixed',{method:'POST',body:'{}'});
  assert.equal(response.status,409);assert.equal(response.statusText,'Conflict');assert.equal((await response.json()).error.code,'conflict');
 });
+
+test('production catalog transport includes all 158 cases across the four catalog assets without starting Python',async()=>{
+ const {JSDOM}=await import('jsdom');const dom=new JSDOM('<p id="runtime-status"></p>',{url:'https://academy.test/course/',runScripts:'outside-only'}),w=dom.window,seen=[];
+ Object.assign(w,{Headers,Response,URLSearchParams,fetch:async url=>{const file=new URL(url).pathname.split('/').at(-1);seen.push(file);return new Response(await readFile(new URL('../web/engine/'+file,import.meta.url),'utf8'));},Worker:class{constructor(){throw Error('Catalog must not boot Python');}}});
+ try{w.eval(await readFile(new URL('../web/offline-bridge.js',import.meta.url),'utf8'));const r=await w.BBEngine.fetch('/academy/catalog'),data=await r.json();assert.equal(data.cases.length,158);assert.equal(new Set(data.cases.map(c=>c.group)).size,20);assert.ok(seen.includes('extended_catalog.json'));for(const group of ['race','oauth','cache','graphql','xml'])assert.equal(data.cases.filter(c=>c.group===group).length,10);}finally{w.close();}
+});

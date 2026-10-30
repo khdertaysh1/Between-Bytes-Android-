@@ -1,5 +1,8 @@
 name: Deploy private Academy feedback and analytics service
 on:
+  push:
+    branches: [main]
+    paths: ['services/academy-api/**']
   workflow_dispatch:
 permissions:
   contents: read

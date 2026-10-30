@@ -3550,6 +3550,1518 @@
           "explanation": "اسمح بحقول العرض صراحة وارفض تعديل الحقول المحمية، بما فيها الحقول المتداخلة."
         }
       ]
+    },
+    {
+      "id": "race",
+      "title": "سباقات الطلبات",
+      "en": "Race conditions",
+      "icon": "◇",
+      "minutes": 30,
+      "xp": 150,
+      "summary": "عداد القسيمة يُقرأ مرتين قبل تسجيل استخدامها.",
+      "cases": [
+        {
+          "id": "race-coupon",
+          "title": "استهلاك قسيمة مرتين",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: عداد القسيمة يُقرأ مرتين قبل تسجيل استخدامها.",
+          "cause": "عداد القسيمة يُقرأ مرتين قبل تسجيل استخدامها.",
+          "fix": "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-gift",
+          "title": "صرف رصيد بالتوازي",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: كل طلب يقرأ رصيد 10000 ويصرف 6000؛ السجل يقبل 12000 رغم أن الرصيد الظاهر قد يبقى 4000.",
+          "cause": "كل طلب يقرأ رصيد 10000 ويصرف 6000؛ السجل يقبل 12000 رغم أن الرصيد الظاهر قد يبقى 4000.",
+          "fix": "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-refund",
+          "title": "استردادان يتجاوزان التحصيل",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: طلبا الاسترداد يفحصان المتبقي قبل حفظ أي استرداد.",
+          "cause": "طلبا الاسترداد يفحصان المتبقي قبل حفظ أي استرداد.",
+          "fix": "اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-stock",
+          "title": "حجز آخر قطعة لطلبين",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: طلبان يريان آخر قطعة متاحة ويحجزانها.",
+          "cause": "طلبان يريان آخر قطعة متاحة ويحجزانها.",
+          "fix": "احجز المخزون بتحديث شرطي ذري يرفض الرصيد غير الكافي.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. احجز المخزون بتحديث شرطي ذري يرفض الرصيد غير الكافي.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-invite",
+          "title": "استخدام دعوة مرتين",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: صلاحية الدعوة تُفحص منفصلة عن استهلاكها.",
+          "cause": "صلاحية الدعوة تُفحص منفصلة عن استهلاكها.",
+          "fix": "استهلك الدعوة مرة واحدة داخل معاملة تربطها بالحساب المنشأ.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. استهلك الدعوة مرة واحدة داخل معاملة تربطها بالحساب المنشأ.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-reset",
+          "title": "استهلاك رمز الاستعادة بالتوازي",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: طلبا الاستعادة يجتازان فحص الرمز قبل إبطاله.",
+          "cause": "طلبا الاستعادة يجتازان فحص الرمز قبل إبطاله.",
+          "fix": "اجعل استهلاك الرمز أحادي الاستخدام ذرياً مع تغيير الاعتماد.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اجعل استهلاك الرمز أحادي الاستخدام ذرياً مع تغيير الاعتماد.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-username",
+          "title": "تجاوز فرادة اسم الحساب",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: فحص وجود اسم المستخدم يتم قبل الإدراج دون قيد فريد.",
+          "cause": "فحص وجود اسم المستخدم يتم قبل الإدراج دون قيد فريد.",
+          "fix": "افرض قيد فرادة داخل قاعدة البيانات وتعامل مع تعارض الإدراج.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. افرض قيد فرادة داخل قاعدة البيانات وتعامل مع تعارض الإدراج.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-email",
+          "title": "تغيير البريد بين التحقق والاستخدام",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: تتحقق الخدمة من بريد ثم تستخدم البريد الحالي بعد أن تغيره عملية أخرى.",
+          "cause": "تتحقق الخدمة من بريد ثم تستخدم البريد الحالي بعد أن تغيره عملية أخرى.",
+          "fix": "اربط الإثبات بالبريد نفسه وبإصدار سجل الحساب.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اربط الإثبات بالبريد نفسه وبإصدار سجل الحساب.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-permission",
+          "title": "إلغاء الصلاحية أثناء العملية",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: تستخدم العملية إذناً قديماً رغم إلغائه قبل الوصول للمورد.",
+          "cause": "تستخدم العملية إذناً قديماً رغم إلغائه قبل الوصول للمورد.",
+          "fix": "تحقق من إصدار الإذن عند تنفيذ العملية الحساسة.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. تحقق من إصدار الإذن عند تنفيذ العملية الحساسة.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        },
+        {
+          "id": "race-file",
+          "title": "استبدال الملف بعد فحصه",
+          "story": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: تفحص الخدمة ملفاً آمناً ثم تستخدم محتوى استُبدل بعد الفحص.",
+          "cause": "تفحص الخدمة ملفاً آمناً ثم تستخدم محتوى استُبدل بعد الفحص.",
+          "fix": "ثبّت هوية المحتوى أو الإصدار وارفض استخدام نسخة مختلفة.",
+          "interpretation": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. ثبّت هوية المحتوى أو الإصدار وارفض استخدام نسخة مختلفة.",
+          "normal": {
+            "overlap": false,
+            "requests": 1
+          },
+          "attack": {
+            "overlap": true,
+            "requests": 2
+          },
+          "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+          "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "race-coupon-fix",
+          "caseId": "race-coupon",
+          "prompt": "ما المعالجة الأنسب لحالة «استهلاك قسيمة مرتين»؟",
+          "options": [
+            "اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة.",
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد."
+          ],
+          "answer": 2,
+          "explanation": "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد."
+        },
+        {
+          "id": "race-gift-fix",
+          "caseId": "race-gift",
+          "prompt": "ما المعالجة الأنسب لحالة «صرف رصيد بالتوازي»؟",
+          "options": [
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+            "اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة.",
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة."
+          ],
+          "answer": 2,
+          "explanation": "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة."
+        },
+        {
+          "id": "race-refund-fix",
+          "caseId": "race-refund",
+          "prompt": "ما المعالجة الأنسب لحالة «استردادان يتجاوزان التحصيل»؟",
+          "options": [
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة.",
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد."
+          ],
+          "answer": 1,
+          "explanation": "اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة."
+        },
+        {
+          "id": "race-stock-fix",
+          "caseId": "race-stock",
+          "prompt": "ما المعالجة الأنسب لحالة «حجز آخر قطعة لطلبين»؟",
+          "options": [
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "احجز المخزون بتحديث شرطي ذري يرفض الرصيد غير الكافي."
+          ],
+          "answer": 2,
+          "explanation": "احجز المخزون بتحديث شرطي ذري يرفض الرصيد غير الكافي."
+        },
+        {
+          "id": "race-invite-fix",
+          "caseId": "race-invite",
+          "prompt": "ما المعالجة الأنسب لحالة «استخدام دعوة مرتين»؟",
+          "options": [
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "استهلك الدعوة مرة واحدة داخل معاملة تربطها بالحساب المنشأ.",
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد."
+          ],
+          "answer": 1,
+          "explanation": "استهلك الدعوة مرة واحدة داخل معاملة تربطها بالحساب المنشأ."
+        },
+        {
+          "id": "race-reset-fix",
+          "caseId": "race-reset",
+          "prompt": "ما المعالجة الأنسب لحالة «استهلاك رمز الاستعادة بالتوازي»؟",
+          "options": [
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "اجعل استهلاك الرمز أحادي الاستخدام ذرياً مع تغيير الاعتماد."
+          ],
+          "answer": 2,
+          "explanation": "اجعل استهلاك الرمز أحادي الاستخدام ذرياً مع تغيير الاعتماد."
+        },
+        {
+          "id": "race-username-fix",
+          "caseId": "race-username",
+          "prompt": "ما المعالجة الأنسب لحالة «تجاوز فرادة اسم الحساب»؟",
+          "options": [
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "افرض قيد فرادة داخل قاعدة البيانات وتعامل مع تعارض الإدراج."
+          ],
+          "answer": 2,
+          "explanation": "افرض قيد فرادة داخل قاعدة البيانات وتعامل مع تعارض الإدراج."
+        },
+        {
+          "id": "race-email-fix",
+          "caseId": "race-email",
+          "prompt": "ما المعالجة الأنسب لحالة «تغيير البريد بين التحقق والاستخدام»؟",
+          "options": [
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+            "اربط الإثبات بالبريد نفسه وبإصدار سجل الحساب."
+          ],
+          "answer": 2,
+          "explanation": "اربط الإثبات بالبريد نفسه وبإصدار سجل الحساب."
+        },
+        {
+          "id": "race-permission-fix",
+          "caseId": "race-permission",
+          "prompt": "ما المعالجة الأنسب لحالة «إلغاء الصلاحية أثناء العملية»؟",
+          "options": [
+            "تحقق من إصدار الإذن عند تنفيذ العملية الحساسة.",
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد."
+          ],
+          "answer": 0,
+          "explanation": "تحقق من إصدار الإذن عند تنفيذ العملية الحساسة."
+        },
+        {
+          "id": "race-file-fix",
+          "caseId": "race-file",
+          "prompt": "ما المعالجة الأنسب لحالة «استبدال الملف بعد فحصه»؟",
+          "options": [
+            "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+            "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+            "ثبّت هوية المحتوى أو الإصدار وارفض استخدام نسخة مختلفة."
+          ],
+          "answer": 2,
+          "explanation": "ثبّت هوية المحتوى أو الإصدار وارفض استخدام نسخة مختلفة."
+        }
+      ]
+    },
+    {
+      "id": "oauth",
+      "title": "OAuth وربط الحسابات",
+      "en": "OAuth & account linking",
+      "icon": "◇",
+      "minutes": 30,
+      "xp": 150,
+      "summary": "تستخدم مقارنة بداية النص لعنوان callback بدلاً من مطابقة الوجهة المسجلة.",
+      "cases": [
+        {
+          "id": "oauth-redirect",
+          "title": "وجهة OAuth غير مسجلة",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تستخدم مقارنة بداية النص لعنوان callback بدلاً من مطابقة الوجهة المسجلة.",
+          "cause": "تستخدم مقارنة بداية النص لعنوان callback بدلاً من مطابقة الوجهة المسجلة.",
+          "fix": "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+          "normal": {
+            "redirect_uri": "https://academy.test/callback"
+          },
+          "attack": {
+            "redirect_uri": "https://academy.test.untrusted.test/callback"
+          },
+          "bad_code": "allowed = uri.startswith(trusted_prefix)",
+          "fixed_code": "allowed = uri in registered_redirect_uris"
+        },
+        {
+          "id": "oauth-state",
+          "title": "قبول callback بلا ربط بالجلسة",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تقبل الخدمة callback بلا إثبات يربطه بمحاولة تسجيل دخول بدأت من جلسة Alice.",
+          "cause": "تقبل الخدمة callback بلا إثبات يربطه بمحاولة تسجيل دخول بدأت من جلسة Alice.",
+          "fix": "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+          "normal": {
+            "state": "state-alice",
+            "subject": "external-alice"
+          },
+          "attack": {
+            "state": "",
+            "subject": "external-bob"
+          },
+          "bad_code": "accept_callback_without_session_binding()",
+          "fixed_code": "require_session_bound_login_transaction()"
+        },
+        {
+          "id": "oauth-state-binding",
+          "title": "إعادة state من جلسة أخرى",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: يكفي وجود state في المخزن حتى لو كان تابعاً لجلسة Bob.",
+          "cause": "يكفي وجود state في المخزن حتى لو كان تابعاً لجلسة Bob.",
+          "fix": "تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه.",
+          "normal": {
+            "state": "state-alice",
+            "subject": "external-alice"
+          },
+          "attack": {
+            "state": "state-bob",
+            "subject": "external-bob"
+          },
+          "bad_code": "require(state in pending)",
+          "fixed_code": "require(pending[state].session_id == session.id)"
+        },
+        {
+          "id": "oauth-pkce",
+          "title": "تجاوز إثبات PKCE",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تُصدر الخدمة رمز وصول دون مقارنة verifier بتحدي الكود.",
+          "cause": "تُصدر الخدمة رمز وصول دون مقارنة verifier بتحدي الكود.",
+          "fix": "تحقق من BASE64URL(SHA256(verifier)) قبل صرف الكود.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. تحقق من BASE64URL(SHA256(verifier)) قبل صرف الكود.",
+          "normal": {
+            "verifier": "training-verifier-alice"
+          },
+          "attack": {
+            "verifier": "wrong-verifier"
+          },
+          "bad_code": "issue_token(code)",
+          "fixed_code": "require(s256(verifier) == code.challenge)\nissue_token(code)"
+        },
+        {
+          "id": "oauth-pkce-downgrade",
+          "title": "إسقاط PKCE عند صرف الكود",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تسمح الخدمة بحذف طريقة PKCE في مرحلة الصرف رغم أن الكود مرتبط بتحدي.",
+          "cause": "تسمح الخدمة بحذف طريقة PKCE في مرحلة الصرف رغم أن الكود مرتبط بتحدي.",
+          "fix": "استمد وجوب PKCE وطريقته من سجل التفويض الأصلي.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. استمد وجوب PKCE وطريقته من سجل التفويض الأصلي.",
+          "normal": {
+            "verifier": "training-verifier-alice",
+            "method": "S256"
+          },
+          "attack": {
+            "verifier": "",
+            "method": ""
+          },
+          "bad_code": "if request.method: verify_pkce()",
+          "fixed_code": "require(code.method == \"S256\")\nverify_pkce(code, verifier)"
+        },
+        {
+          "id": "oauth-code-client",
+          "title": "كود صادر لعميل آخر",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تتحقق الخدمة من وجود الكود دون مطابقته بالعميل الذي يصرفه.",
+          "cause": "تتحقق الخدمة من وجود الكود دون مطابقته بالعميل الذي يصرفه.",
+          "fix": "اربط Authorization Code بمعرف العميل الموثوق.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. اربط Authorization Code بمعرف العميل الموثوق.",
+          "normal": {
+            "code": "code-academy",
+            "client_id": "academy"
+          },
+          "attack": {
+            "code": "code-other",
+            "client_id": "academy"
+          },
+          "bad_code": "require(code in codes)",
+          "fixed_code": "require(codes[code].client_id == client.id)"
+        },
+        {
+          "id": "oauth-code-redirect",
+          "title": "تغيير وجهة الكود عند صرفه",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تقبل الخدمة صرف كود بوجهة تختلف عن وجهة طلب التفويض الأصلي.",
+          "cause": "تقبل الخدمة صرف كود بوجهة تختلف عن وجهة طلب التفويض الأصلي.",
+          "fix": "طابق وجهة الصرف بوجهة الكود الأصلية المسجلة.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. طابق وجهة الصرف بوجهة الكود الأصلية المسجلة.",
+          "normal": {
+            "code": "code-academy",
+            "redirect_uri": "https://academy.test/callback"
+          },
+          "attack": {
+            "code": "code-alt",
+            "redirect_uri": "https://academy.test/callback"
+          },
+          "bad_code": "exchange(code, submitted_redirect)",
+          "fixed_code": "require(submitted_redirect == code.redirect_uri)"
+        },
+        {
+          "id": "oauth-code-reuse",
+          "title": "صرف كود التفويض مرتين",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: الكود نفسه يصدر أكثر من رمز وصول عند تكرار الصرف.",
+          "cause": "الكود نفسه يصدر أكثر من رمز وصول عند تكرار الصرف.",
+          "fix": "استهلك الكود مرة واحدة؛ تكرار الصرف يعيد invalid_grant.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. استهلك الكود مرة واحدة؛ تكرار الصرف يعيد invalid_grant.",
+          "normal": {
+            "flow": "control",
+            "uses": 1
+          },
+          "attack": {
+            "flow": "attack",
+            "uses": 2
+          },
+          "bad_code": "for request in requests: issue(code)",
+          "fixed_code": "consume_code_once_atomically(code)\nissue_token(code)"
+        },
+        {
+          "id": "oauth-link-csrf",
+          "title": "ربط حساب خارجي دون نية المستخدم",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: يرتبط حساب Alice المحلي بحساب خارجي اختاره طرف آخر دون نية ربط موثقة.",
+          "cause": "يرتبط حساب Alice المحلي بحساب خارجي اختاره طرف آخر دون نية ربط موثقة.",
+          "fix": "اربط طلب ربط الحساب بالجلسة والنية وهوية الحساب الخارجي.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. اربط طلب ربط الحساب بالجلسة والنية وهوية الحساب الخارجي.",
+          "normal": {
+            "state": "link-alice",
+            "subject": "external-alice"
+          },
+          "attack": {
+            "state": "",
+            "subject": "external-bob"
+          },
+          "bad_code": "link(session.user, callback.subject)",
+          "fixed_code": "require_verified_link_intent(session, callback)\nlink(session.user, callback.subject)"
+        },
+        {
+          "id": "oauth-unverified-email",
+          "title": "دمج الحساب ببريد غير موثق",
+          "story": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تدمج الخدمة حساباً خارجياً بحساب Alice لمجرد تطابق نص البريد.",
+          "cause": "تدمج الخدمة حساباً خارجياً بحساب Alice لمجرد تطابق نص البريد.",
+          "fix": "لا تستخدم بريداً غير موثق لإثبات ملكية حساب محلي؛ اطلب إثبات ربط مناسباً.",
+          "interpretation": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. لا تستخدم بريداً غير موثق لإثبات ملكية حساب محلي؛ اطلب إثبات ربط مناسباً.",
+          "normal": {
+            "email": "alice@example.test",
+            "email_verified": true
+          },
+          "attack": {
+            "email": "alice@example.test",
+            "email_verified": false
+          },
+          "bad_code": "find_local_account(claims.email)",
+          "fixed_code": "require(claims.email_verified)\nrequire_appropriate_linking_proof()"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "oauth-redirect-fix",
+          "caseId": "oauth-redirect",
+          "prompt": "ما المعالجة الأنسب لحالة «وجهة OAuth غير مسجلة»؟",
+          "options": [
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+            "تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه.",
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل."
+          ],
+          "answer": 2,
+          "explanation": "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل."
+        },
+        {
+          "id": "oauth-state-fix",
+          "caseId": "oauth-state",
+          "prompt": "ما المعالجة الأنسب لحالة «قبول callback بلا ربط بالجلسة»؟",
+          "options": [
+            "تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه.",
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل."
+          ],
+          "answer": 1,
+          "explanation": "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق."
+        },
+        {
+          "id": "oauth-state-binding-fix",
+          "caseId": "oauth-state-binding",
+          "prompt": "ما المعالجة الأنسب لحالة «إعادة state من جلسة أخرى»؟",
+          "options": [
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+            "تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه.",
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل."
+          ],
+          "answer": 1,
+          "explanation": "تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه."
+        },
+        {
+          "id": "oauth-pkce-fix",
+          "caseId": "oauth-pkce",
+          "prompt": "ما المعالجة الأنسب لحالة «تجاوز إثبات PKCE»؟",
+          "options": [
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+            "تحقق من BASE64URL(SHA256(verifier)) قبل صرف الكود.",
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق."
+          ],
+          "answer": 1,
+          "explanation": "تحقق من BASE64URL(SHA256(verifier)) قبل صرف الكود."
+        },
+        {
+          "id": "oauth-pkce-downgrade-fix",
+          "caseId": "oauth-pkce-downgrade",
+          "prompt": "ما المعالجة الأنسب لحالة «إسقاط PKCE عند صرف الكود»؟",
+          "options": [
+            "استمد وجوب PKCE وطريقته من سجل التفويض الأصلي.",
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق."
+          ],
+          "answer": 0,
+          "explanation": "استمد وجوب PKCE وطريقته من سجل التفويض الأصلي."
+        },
+        {
+          "id": "oauth-code-client-fix",
+          "caseId": "oauth-code-client",
+          "prompt": "ما المعالجة الأنسب لحالة «كود صادر لعميل آخر»؟",
+          "options": [
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+            "اربط Authorization Code بمعرف العميل الموثوق."
+          ],
+          "answer": 2,
+          "explanation": "اربط Authorization Code بمعرف العميل الموثوق."
+        },
+        {
+          "id": "oauth-code-redirect-fix",
+          "caseId": "oauth-code-redirect",
+          "prompt": "ما المعالجة الأنسب لحالة «تغيير وجهة الكود عند صرفه»؟",
+          "options": [
+            "طابق وجهة الصرف بوجهة الكود الأصلية المسجلة.",
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق."
+          ],
+          "answer": 0,
+          "explanation": "طابق وجهة الصرف بوجهة الكود الأصلية المسجلة."
+        },
+        {
+          "id": "oauth-code-reuse-fix",
+          "caseId": "oauth-code-reuse",
+          "prompt": "ما المعالجة الأنسب لحالة «صرف كود التفويض مرتين»؟",
+          "options": [
+            "استهلك الكود مرة واحدة؛ تكرار الصرف يعيد invalid_grant.",
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل."
+          ],
+          "answer": 0,
+          "explanation": "استهلك الكود مرة واحدة؛ تكرار الصرف يعيد invalid_grant."
+        },
+        {
+          "id": "oauth-link-csrf-fix",
+          "caseId": "oauth-link-csrf",
+          "prompt": "ما المعالجة الأنسب لحالة «ربط حساب خارجي دون نية المستخدم»؟",
+          "options": [
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+            "اربط طلب ربط الحساب بالجلسة والنية وهوية الحساب الخارجي.",
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق."
+          ],
+          "answer": 1,
+          "explanation": "اربط طلب ربط الحساب بالجلسة والنية وهوية الحساب الخارجي."
+        },
+        {
+          "id": "oauth-unverified-email-fix",
+          "caseId": "oauth-unverified-email",
+          "prompt": "ما المعالجة الأنسب لحالة «دمج الحساب ببريد غير موثق»؟",
+          "options": [
+            "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+            "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+            "لا تستخدم بريداً غير موثق لإثبات ملكية حساب محلي؛ اطلب إثبات ربط مناسباً."
+          ],
+          "answer": 2,
+          "explanation": "لا تستخدم بريداً غير موثق لإثبات ملكية حساب محلي؛ اطلب إثبات ربط مناسباً."
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "title": "تسميم الكاش وخداعه",
+      "en": "Cache poisoning & deception",
+      "icon": "◇",
+      "minutes": 30,
+      "xp": 150,
+      "summary": "رأس المضيف الوكيل يؤثر بعنوان المورد بينما مفتاح الكاش لا يفصله.",
+      "cases": [
+        {
+          "id": "cache-forwarded-host",
+          "title": "تسميم عنوان المورد عبر المضيف",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: رأس المضيف الوكيل يؤثر بعنوان المورد بينما مفتاح الكاش لا يفصله.",
+          "cause": "رأس المضيف الوكيل يؤثر بعنوان المورد بينما مفتاح الكاش لا يفصله.",
+          "fix": "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+          "normal": {
+            "forwarded_host": "academy.test"
+          },
+          "attack": {
+            "forwarded_host": "untrusted.test"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-query",
+          "title": "معامل تحويل خارج مفتاح الكاش",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: next يغيّر وجهة الاستجابة لكن المفتاح يتجاهله.",
+          "cause": "next يغيّر وجهة الاستجابة لكن المفتاح يتجاهله.",
+          "fix": "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+          "normal": {
+            "next": "default"
+          },
+          "attack": {
+            "next": "external"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-header",
+          "title": "رأس قالب يغيّر مورد الصفحة",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: رأس مخصص يغيّر عنوان ملف النمط دون فصل نسخة التخزين.",
+          "cause": "رأس مخصص يغيّر عنوان ملف النمط دون فصل نسخة التخزين.",
+          "fix": "لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح.",
+          "normal": {
+            "theme": "default"
+          },
+          "attack": {
+            "theme": "external"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-cookie",
+          "title": "تسريب سعر تعاقدي عبر Cookie",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: ملف تعريف فئة العميل يغيّر سعراً تعاقدياً ولا يدخل في مفتاح التخزين.",
+          "cause": "ملف تعريف فئة العميل يغيّر سعراً تعاقدياً ولا يدخل في مفتاح التخزين.",
+          "fix": "افصل الاستجابات حسب سياق التفويض أو امنع التخزين المشترك للمحتوى الخاص.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. افصل الاستجابات حسب سياق التفويض أو امنع التخزين المشترك للمحتوى الخاص.",
+          "normal": {
+            "customer_class": "default"
+          },
+          "attack": {
+            "customer_class": "contract"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-get-body",
+          "title": "جسم GET خارج المفتاح",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: الأصل يستخدم جسم GET لصناعة محتوى بينما الكاش يعتمد المسار فقط.",
+          "cause": "الأصل يستخدم جسم GET لصناعة محتوى بينما الكاش يعتمد المسار فقط.",
+          "fix": "وحّد عقد الطلب ومفتاح الكاش؛ لا تستخدم جسماً غير محسوب لصناعة استجابة مشتركة.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. وحّد عقد الطلب ومفتاح الكاش؛ لا تستخدم جسماً غير محسوب لصناعة استجابة مشتركة.",
+          "normal": {
+            "body": "default"
+          },
+          "attack": {
+            "body": "training-banner"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-private",
+          "title": "تخزين صفحة حساب بين جلسات",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: استجابة Alice الخاصة تدخل كاشاً مشتركاً ويقرأها مستخدم بلا جلسة.",
+          "cause": "استجابة Alice الخاصة تدخل كاشاً مشتركاً ويقرأها مستخدم بلا جلسة.",
+          "fix": "احترم private وno-store ولا تشارك استجابات الحسابات.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. احترم private وno-store ولا تشارك استجابات الحسابات.",
+          "normal": {
+            "path": "/public/site.css"
+          },
+          "attack": {
+            "path": "/account"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-extension",
+          "title": "خداع الكاش بلاحقة ثابتة",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: الأصل يرى صفحة حساب بينما الكاش يعامل لاحقة css كملف عام.",
+          "cause": "الأصل يرى صفحة حساب بينما الكاش يعامل لاحقة css كملف عام.",
+          "fix": "استند لنوع المورد وسياسة الأصل لا للاحقة المسار فقط.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. استند لنوع المورد وسياسة الأصل لا للاحقة المسار فقط.",
+          "normal": {
+            "path": "/public/site.css"
+          },
+          "attack": {
+            "path": "/account/profile.css"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-delimiter",
+          "title": "اختلاف تفسير فاصل المسار",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: الأصل يزيل الجزء بعد الفاصلة المنقوطة بينما الكاش يصنف النص الكامل كملف ثابت.",
+          "cause": "الأصل يزيل الجزء بعد الفاصلة المنقوطة بينما الكاش يصنف النص الكامل كملف ثابت.",
+          "fix": "وحّد تفسير المسار واحترم خصوصية الاستجابة بعد التوجيه.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. وحّد تفسير المسار واحترم خصوصية الاستجابة بعد التوجيه.",
+          "normal": {
+            "path": "/public/site.css"
+          },
+          "attack": {
+            "path": "/account;style.css"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-normalization",
+          "title": "تطبيع المسار إلى مورد خاص",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: المسار يبدأ بمجلد static لكنه يعود إلى account بعد التطبيع.",
+          "cause": "المسار يبدأ بمجلد static لكنه يعود إلى account بعد التطبيع.",
+          "fix": "صنّف المورد بعد التطبيع ولا تخزن استجابته الخاصة.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. صنّف المورد بعد التطبيع ولا تخزن استجابته الخاصة.",
+          "normal": {
+            "path": "/public/site.css"
+          },
+          "attack": {
+            "path": "/static/../account"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        },
+        {
+          "id": "cache-control",
+          "title": "تجاهل no-store من الأصل",
+          "story": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: إعداد التخزين يفرض الحفظ رغم أن الأصل يمنع تخزين صفحة حساسة.",
+          "cause": "إعداد التخزين يفرض الحفظ رغم أن الأصل يمنع تخزين صفحة حساسة.",
+          "fix": "لا تتجاوز منع التخزين للصفحات الحساسة بمبدأ cache everything.",
+          "interpretation": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. لا تتجاوز منع التخزين للصفحات الحساسة بمبدأ cache everything.",
+          "normal": {
+            "path": "/public/site.css"
+          },
+          "attack": {
+            "path": "/account/summary.css"
+          },
+          "bad_code": "cache[key_without_context] = origin_response",
+          "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "cache-forwarded-host-fix",
+          "caseId": "cache-forwarded-host",
+          "prompt": "ما المعالجة الأنسب لحالة «تسميم عنوان المورد عبر المضيف»؟",
+          "options": [
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+            "لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح.",
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة."
+          ],
+          "answer": 0,
+          "explanation": "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط."
+        },
+        {
+          "id": "cache-query-fix",
+          "caseId": "cache-query",
+          "prompt": "ما المعالجة الأنسب لحالة «معامل تحويل خارج مفتاح الكاش»؟",
+          "options": [
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+            "لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح.",
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة."
+          ],
+          "answer": 2,
+          "explanation": "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة."
+        },
+        {
+          "id": "cache-header-fix",
+          "caseId": "cache-header",
+          "prompt": "ما المعالجة الأنسب لحالة «رأس قالب يغيّر مورد الصفحة»؟",
+          "options": [
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+            "لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح."
+          ],
+          "answer": 2,
+          "explanation": "لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح."
+        },
+        {
+          "id": "cache-cookie-fix",
+          "caseId": "cache-cookie",
+          "prompt": "ما المعالجة الأنسب لحالة «تسريب سعر تعاقدي عبر Cookie»؟",
+          "options": [
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+            "افصل الاستجابات حسب سياق التفويض أو امنع التخزين المشترك للمحتوى الخاص.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط."
+          ],
+          "answer": 1,
+          "explanation": "افصل الاستجابات حسب سياق التفويض أو امنع التخزين المشترك للمحتوى الخاص."
+        },
+        {
+          "id": "cache-get-body-fix",
+          "caseId": "cache-get-body",
+          "prompt": "ما المعالجة الأنسب لحالة «جسم GET خارج المفتاح»؟",
+          "options": [
+            "وحّد عقد الطلب ومفتاح الكاش؛ لا تستخدم جسماً غير محسوب لصناعة استجابة مشتركة.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة."
+          ],
+          "answer": 0,
+          "explanation": "وحّد عقد الطلب ومفتاح الكاش؛ لا تستخدم جسماً غير محسوب لصناعة استجابة مشتركة."
+        },
+        {
+          "id": "cache-private-fix",
+          "caseId": "cache-private",
+          "prompt": "ما المعالجة الأنسب لحالة «تخزين صفحة حساب بين جلسات»؟",
+          "options": [
+            "احترم private وno-store ولا تشارك استجابات الحسابات.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة."
+          ],
+          "answer": 0,
+          "explanation": "احترم private وno-store ولا تشارك استجابات الحسابات."
+        },
+        {
+          "id": "cache-extension-fix",
+          "caseId": "cache-extension",
+          "prompt": "ما المعالجة الأنسب لحالة «خداع الكاش بلاحقة ثابتة»؟",
+          "options": [
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+            "استند لنوع المورد وسياسة الأصل لا للاحقة المسار فقط.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط."
+          ],
+          "answer": 1,
+          "explanation": "استند لنوع المورد وسياسة الأصل لا للاحقة المسار فقط."
+        },
+        {
+          "id": "cache-delimiter-fix",
+          "caseId": "cache-delimiter",
+          "prompt": "ما المعالجة الأنسب لحالة «اختلاف تفسير فاصل المسار»؟",
+          "options": [
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+            "وحّد تفسير المسار واحترم خصوصية الاستجابة بعد التوجيه.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط."
+          ],
+          "answer": 1,
+          "explanation": "وحّد تفسير المسار واحترم خصوصية الاستجابة بعد التوجيه."
+        },
+        {
+          "id": "cache-normalization-fix",
+          "caseId": "cache-normalization",
+          "prompt": "ما المعالجة الأنسب لحالة «تطبيع المسار إلى مورد خاص»؟",
+          "options": [
+            "صنّف المورد بعد التطبيع ولا تخزن استجابته الخاصة.",
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط."
+          ],
+          "answer": 0,
+          "explanation": "صنّف المورد بعد التطبيع ولا تخزن استجابته الخاصة."
+        },
+        {
+          "id": "cache-control-fix",
+          "caseId": "cache-control",
+          "prompt": "ما المعالجة الأنسب لحالة «تجاهل no-store من الأصل»؟",
+          "options": [
+            "لا تتجاوز منع التخزين للصفحات الحساسة بمبدأ cache everything.",
+            "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+            "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط."
+          ],
+          "answer": 0,
+          "explanation": "لا تتجاوز منع التخزين للصفحات الحساسة بمبدأ cache everything."
+        }
+      ]
+    },
+    {
+      "id": "graphql",
+      "title": "أمن GraphQL",
+      "en": "GraphQL security",
+      "icon": "◇",
+      "minutes": 30,
+      "xp": 150,
+      "summary": "صلاحية قراءة me لا تعني السماح بكل حقل فيه.",
+      "cases": [
+        {
+          "id": "graphql-field",
+          "title": "حقل حساس داخل كائن مسموح",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: صلاحية قراءة me لا تعني السماح بكل حقل فيه.",
+          "cause": "صلاحية قراءة me لا تعني السماح بكل حقل فيه.",
+          "fix": "افرض صلاحية الحقل الحساس داخل الـresolver.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. افرض صلاحية الحقل الحساس داخل الـresolver.",
+          "normal": {
+            "query": "{ me { id email } }"
+          },
+          "attack": {
+            "query": "{ me { id recovery_code } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-node",
+          "title": "تجاوز الملكية عبر node",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: المسار node يسترجع معرفاً دون تحقق ملكيته.",
+          "cause": "المسار node يسترجع معرفاً دون تحقق ملكيته.",
+          "fix": "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+          "normal": {
+            "query": "{ node(id:\"doc-alice\") { id owner content } }"
+          },
+          "attack": {
+            "query": "{ node(id:\"doc-bob\") { id owner content } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-tenant",
+          "title": "علاقة تكشف مؤسسة أخرى",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: علاقة المؤسسة تسمح بمعرف مؤسسة خارج جلسة Alice.",
+          "cause": "علاقة المؤسسة تسمح بمعرف مؤسسة خارج جلسة Alice.",
+          "fix": "طبّق حدود المؤسسة عند كل علاقة واستعلام.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. طبّق حدود المؤسسة عند كل علاقة واستعلام.",
+          "normal": {
+            "query": "{ tenant(id:\"north\") { id documents { id owner content } } }"
+          },
+          "attack": {
+            "query": "{ tenant(id:\"south\") { id documents { id owner content } } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-mutation",
+          "title": "Mutation تعدل مورد الغير",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: التعديل يصل للسجل دون صلاحية على المستند المستهدف.",
+          "cause": "التعديل يصل للسجل دون صلاحية على المستند المستهدف.",
+          "fix": "افرض صلاحية العملية والمورد قبل التعديل.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. افرض صلاحية العملية والمورد قبل التعديل.",
+          "normal": {
+            "query": "mutation { renameDocument(id:\"doc-alice\",title:\"My title\") { id title } }"
+          },
+          "attack": {
+            "query": "mutation { renameDocument(id:\"doc-bob\",title:\"Changed\") { id title } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-aliases",
+          "title": "Aliases تتجاوز عدّاد العملية",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: يُحتسب طلب HTTP واحد رغم تنفيذ أربع محاولات تحقق.",
+          "cause": "يُحتسب طلب HTTP واحد رغم تنفيذ أربع محاولات تحقق.",
+          "fix": "احتسب كل عملية حساسة لا عدد رسائل HTTP فقط.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. احتسب كل عملية حساسة لا عدد رسائل HTTP فقط.",
+          "normal": {
+            "query": "{ one:login(password:\"wrong\") { authenticated checked attempt status } }"
+          },
+          "attack": {
+            "query": "{ a:login(password:\"wrong\") { authenticated checked attempt status } b:login(password:\"wrong\") { authenticated checked attempt status } c:login(password:\"wrong\") { authenticated checked attempt status } d:login(password:\"wrong\") { authenticated checked attempt status } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-batch",
+          "title": "تجميع عمليات يتجاوز الميزانية",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: تُصفّر الميزانية عند كل عملية داخل batch نفسه.",
+          "cause": "تُصفّر الميزانية عند كل عملية داخل batch نفسه.",
+          "fix": "اجمع كلفة العمليات تحت هوية واحدة وحدود مشتركة.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. اجمع كلفة العمليات تحت هوية واحدة وحدود مشتركة.",
+          "normal": {
+            "queries": [
+              "{ a:login(password:\"wrong\") { authenticated checked attempt status } }"
+            ]
+          },
+          "attack": {
+            "queries": [
+              "{ a:login(password:\"wrong\") { authenticated checked attempt status } }",
+              "{ a:login(password:\"wrong\") { authenticated checked attempt status } }",
+              "{ a:login(password:\"wrong\") { authenticated checked attempt status } }",
+              "{ a:login(password:\"wrong\") { authenticated checked attempt status } }"
+            ]
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-depth",
+          "title": "عمق استعلام غير مضبوط",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: تتبع العلاقات المتكررة يولد عملاً أعمق من الحد المسموح.",
+          "cause": "تتبع العلاقات المتكررة يولد عملاً أعمق من الحد المسموح.",
+          "fix": "افحص عمق AST قبل تشغيل الـresolvers.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. افحص عمق AST قبل تشغيل الـresolvers.",
+          "normal": {
+            "query": "{ me { id } }"
+          },
+          "attack": {
+            "query": "{ me { manager { manager { manager { manager { manager { id } } } } } } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-cost",
+          "title": "Pagination تتجاوز كلفة التنفيذ",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: حقل first الكبير يضاعف العمل دون ميزانية كلية.",
+          "cause": "حقل first الكبير يضاعف العمل دون ميزانية كلية.",
+          "fix": "احسب الكلفة قبل التنفيذ وافرض حدود صفحات مناسبة.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. احسب الكلفة قبل التنفيذ وافرض حدود صفحات مناسبة.",
+          "normal": {
+            "query": "{ documents(first:2) { id owner } }"
+          },
+          "attack": {
+            "query": "{ documents(first:100) { id owner } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-csrf",
+          "title": "Mutation عبر طلب غير موثوق",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: تغيير الملاحظة يُقبل من أصل خارجي وبطريقة GET في النموذج.",
+          "cause": "تغيير الملاحظة يُقبل من أصل خارجي وبطريقة GET في النموذج.",
+          "fix": "ارفض GET لتغيير الحالة وطبّق تحقق CSRF مناسباً للجلسات.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. ارفض GET لتغيير الحالة وطبّق تحقق CSRF مناسباً للجلسات.",
+          "normal": {
+            "query": "mutation { updateNote(note:\"My note\") { note } }",
+            "method": "POST",
+            "origin": "https://academy.test"
+          },
+          "attack": {
+            "query": "mutation { updateNote(note:\"Changed\") { note } }",
+            "method": "GET",
+            "origin": "https://untrusted.test"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        },
+        {
+          "id": "graphql-schema",
+          "title": "اكتشاف عملية إدارية بلا صلاحية",
+          "story": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: المشكلة غياب صلاحية adminExport؛ introspection وحدها ليست الثغرة.",
+          "cause": "المشكلة غياب صلاحية adminExport؛ introspection وحدها ليست الثغرة.",
+          "fix": "اسمح بالمخطط حسب السياسة وافرض صلاحية العملية الإدارية.",
+          "interpretation": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. اسمح بالمخطط حسب السياسة وافرض صلاحية العملية الإدارية.",
+          "normal": {
+            "query": "{ __schema { queryType { fields { name } } } }"
+          },
+          "attack": {
+            "query": "{ __schema { queryType { fields { name } } } adminExport { secret } }"
+          },
+          "bad_code": "return resolve_without_authorization_or_budget(ast)",
+          "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "graphql-field-fix",
+          "caseId": "graphql-field",
+          "prompt": "ما المعالجة الأنسب لحالة «حقل حساس داخل كائن مسموح»؟",
+          "options": [
+            "افرض صلاحية الحقل الحساس داخل الـresolver.",
+            "طبّق حدود المؤسسة عند كل علاقة واستعلام.",
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة."
+          ],
+          "answer": 0,
+          "explanation": "افرض صلاحية الحقل الحساس داخل الـresolver."
+        },
+        {
+          "id": "graphql-node-fix",
+          "caseId": "graphql-node",
+          "prompt": "ما المعالجة الأنسب لحالة «تجاوز الملكية عبر node»؟",
+          "options": [
+            "طبّق حدود المؤسسة عند كل علاقة واستعلام.",
+            "افرض صلاحية الحقل الحساس داخل الـresolver.",
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة."
+          ],
+          "answer": 2,
+          "explanation": "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة."
+        },
+        {
+          "id": "graphql-tenant-fix",
+          "caseId": "graphql-tenant",
+          "prompt": "ما المعالجة الأنسب لحالة «علاقة تكشف مؤسسة أخرى»؟",
+          "options": [
+            "افرض صلاحية الحقل الحساس داخل الـresolver.",
+            "طبّق حدود المؤسسة عند كل علاقة واستعلام.",
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة."
+          ],
+          "answer": 1,
+          "explanation": "طبّق حدود المؤسسة عند كل علاقة واستعلام."
+        },
+        {
+          "id": "graphql-mutation-fix",
+          "caseId": "graphql-mutation",
+          "prompt": "ما المعالجة الأنسب لحالة «Mutation تعدل مورد الغير»؟",
+          "options": [
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+            "افرض صلاحية العملية والمورد قبل التعديل.",
+            "افرض صلاحية الحقل الحساس داخل الـresolver."
+          ],
+          "answer": 1,
+          "explanation": "افرض صلاحية العملية والمورد قبل التعديل."
+        },
+        {
+          "id": "graphql-aliases-fix",
+          "caseId": "graphql-aliases",
+          "prompt": "ما المعالجة الأنسب لحالة «Aliases تتجاوز عدّاد العملية»؟",
+          "options": [
+            "افرض صلاحية الحقل الحساس داخل الـresolver.",
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+            "احتسب كل عملية حساسة لا عدد رسائل HTTP فقط."
+          ],
+          "answer": 2,
+          "explanation": "احتسب كل عملية حساسة لا عدد رسائل HTTP فقط."
+        },
+        {
+          "id": "graphql-batch-fix",
+          "caseId": "graphql-batch",
+          "prompt": "ما المعالجة الأنسب لحالة «تجميع عمليات يتجاوز الميزانية»؟",
+          "options": [
+            "اجمع كلفة العمليات تحت هوية واحدة وحدود مشتركة.",
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+            "افرض صلاحية الحقل الحساس داخل الـresolver."
+          ],
+          "answer": 0,
+          "explanation": "اجمع كلفة العمليات تحت هوية واحدة وحدود مشتركة."
+        },
+        {
+          "id": "graphql-depth-fix",
+          "caseId": "graphql-depth",
+          "prompt": "ما المعالجة الأنسب لحالة «عمق استعلام غير مضبوط»؟",
+          "options": [
+            "افرض صلاحية الحقل الحساس داخل الـresolver.",
+            "افحص عمق AST قبل تشغيل الـresolvers.",
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة."
+          ],
+          "answer": 1,
+          "explanation": "افحص عمق AST قبل تشغيل الـresolvers."
+        },
+        {
+          "id": "graphql-cost-fix",
+          "caseId": "graphql-cost",
+          "prompt": "ما المعالجة الأنسب لحالة «Pagination تتجاوز كلفة التنفيذ»؟",
+          "options": [
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+            "احسب الكلفة قبل التنفيذ وافرض حدود صفحات مناسبة.",
+            "افرض صلاحية الحقل الحساس داخل الـresolver."
+          ],
+          "answer": 1,
+          "explanation": "احسب الكلفة قبل التنفيذ وافرض حدود صفحات مناسبة."
+        },
+        {
+          "id": "graphql-csrf-fix",
+          "caseId": "graphql-csrf",
+          "prompt": "ما المعالجة الأنسب لحالة «Mutation عبر طلب غير موثوق»؟",
+          "options": [
+            "افرض صلاحية الحقل الحساس داخل الـresolver.",
+            "ارفض GET لتغيير الحالة وطبّق تحقق CSRF مناسباً للجلسات.",
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة."
+          ],
+          "answer": 1,
+          "explanation": "ارفض GET لتغيير الحالة وطبّق تحقق CSRF مناسباً للجلسات."
+        },
+        {
+          "id": "graphql-schema-fix",
+          "caseId": "graphql-schema",
+          "prompt": "ما المعالجة الأنسب لحالة «اكتشاف عملية إدارية بلا صلاحية»؟",
+          "options": [
+            "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+            "افرض صلاحية الحقل الحساس داخل الـresolver.",
+            "اسمح بالمخطط حسب السياسة وافرض صلاحية العملية الإدارية."
+          ],
+          "answer": 2,
+          "explanation": "اسمح بالمخطط حسب السياسة وافرض صلاحية العملية الإدارية."
+        }
+      ]
+    },
+    {
+      "id": "xml",
+      "title": "XML والكيانات الخارجية",
+      "en": "XML & external entities",
+      "icon": "◇",
+      "minutes": 30,
+      "xp": 150,
+      "summary": "يحل المحلّل كياناً خارجياً من مصدر المستخدم ويعيد محتواه.",
+      "cases": [
+        {
+          "id": "xml-file",
+          "title": "قراءة ملف عبر كيان خارجي",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يحل المحلّل كياناً خارجياً من مصدر المستخدم ويعيد محتواه.",
+          "cause": "يحل المحلّل كياناً خارجياً من مصدر المستخدم ويعيد محتواه.",
+          "fix": "عطّل DTD والكيانات الخارجية قبل التحليل.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل DTD والكيانات الخارجية قبل التحليل.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><root>&sample;</root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-internal",
+          "title": "XXE يصل لمورد داخلي",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يسمح حل الكيان بالوصول إلى مورد داخلي في خريطة المختبر.",
+          "cause": "يسمح حل الكيان بالوصول إلى مورد داخلي في خريطة المختبر.",
+          "fix": "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"https://internal.test/profile\">]><root>&sample;</root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-dtd",
+          "title": "تحميل DTD خارجي",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يستورد المحلّل تعريفات كيانات من DTD غير موثوق.",
+          "cause": "يستورد المحلّل تعريفات كيانات من DTD غير موثوق.",
+          "fix": "عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE root SYSTEM \"https://dtd.test/entity.dtd\"><root>&sample;</root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-parameter",
+          "title": "Parameter Entity تستورد تعريفاً",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: تستورد parameter entity تعريفاً يؤدي لقراءة ملف العينة.",
+          "cause": "تستورد parameter entity تعريفاً يؤدي لقراءة ملف العينة.",
+          "fix": "عطّل parameter entities وDTD بدلاً من حجب اسم كيان واحد.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل parameter entities وDTD بدلاً من حجب اسم كيان واحد.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE root [<!ENTITY % remote SYSTEM \"https://dtd.test/entity.dtd\">%remote;]><root>&sample;</root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-blind",
+          "title": "حل كيان دون إرجاع المحتوى",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: لا يظهر المحتوى في النص المعاد لكن سجل المحلّل يكشف طلب المورد الوهمي.",
+          "cause": "لا يظهر المحتوى في النص المعاد لكن سجل المحلّل يكشف طلب المورد الوهمي.",
+          "fix": "امنع الحل الخارجي ولا تعتمد على عدم ظهور النص كحماية.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. امنع الحل الخارجي ولا تعتمد على عدم ظهور النص كحماية.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"https://callback.test/ping\">]><root>&sample;</root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-error",
+          "title": "تسريب محتوى عبر تشخيص خطأ",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: رسالة التشخيص تعرض مقتطفاً من XML بعد توسيع السر.",
+          "cause": "رسالة التشخيص تعرض مقتطفاً من XML بعد توسيع السر.",
+          "fix": "عطّل الكيانات وارجع خطأ عاماً دون محتوى موسّع.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل الكيانات وارجع خطأ عاماً دون محتوى موسّع.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><root>&sample;<broken></root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-xinclude",
+          "title": "قراءة مورد عبر XInclude",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: المعالجة اللاحقة تنفذ XInclude حتى دون DOCTYPE.",
+          "cause": "المعالجة اللاحقة تنفذ XInclude حتى دون DOCTYPE.",
+          "fix": "عطّل XInclude صراحة في مسار معالجة المدخلات.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل XInclude صراحة في مسار معالجة المدخلات.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<root xmlns:xi=\"http://www.w3.org/2001/XInclude\"><xi:include href=\"file:///fixtures/secret.txt\" parse=\"text\"/></root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-svg",
+          "title": "كيان خارجي داخل SVG",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يعامل مستورد SVG ملف الصورة كـXML يسمح بالكيانات.",
+          "cause": "يعامل مستورد SVG ملف الصورة كـXML يسمح بالكيانات.",
+          "fix": "استخدم سياسة XML آمنة عند تحليل SVG؛ الامتداد لا يكفي.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. استخدم سياسة XML آمنة عند تحليل SVG؛ الامتداد لا يكفي.",
+          "normal": {
+            "xml": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>Hello</text></svg>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE svg [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><svg xmlns=\"http://www.w3.org/2000/svg\"><text>&sample;</text></svg>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-docx",
+          "title": "كيان داخل XML مستند مضغوط",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: فك ZIP لا يحمي تحليل word/document.xml الذي يأتي بعده.",
+          "cause": "فك ZIP لا يحمي تحليل word/document.xml الذي يأتي بعده.",
+          "fix": "طبّق سياسة XML الآمنة داخل ملفات الحاوية أيضاً.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. طبّق سياسة XML الآمنة داخل ملفات الحاوية أيضاً.",
+          "normal": {
+            "xml": "<document><text>Hello</text></document>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE document [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><document><text>&sample;</text></document>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        },
+        {
+          "id": "xml-expansion",
+          "title": "توسع كيانات يتجاوز ميزانية المعالجة",
+          "story": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: كيانات داخلية متداخلة تضاعف حجم العمل حتى دون شبكة أو ملف خارجي.",
+          "cause": "كيانات داخلية متداخلة تضاعف حجم العمل حتى دون شبكة أو ملف خارجي.",
+          "fix": "عطّل DTD غير الضروري وافرض ميزانيات حجم وعمق وزمن.",
+          "interpretation": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل DTD غير الضروري وافرض ميزانيات حجم وعمق وزمن.",
+          "normal": {
+            "xml": "<root><message>Hello</message></root>"
+          },
+          "attack": {
+            "xml": "<!DOCTYPE root [<!ENTITY a \"xxxxxxxxxxxxxxxxxxxx\"><!ENTITY b \"&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;\"><!ENTITY c \"&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;\">]><root>&c;</root>"
+          },
+          "bad_code": "document = parse_with_input_defined_entities(xml)",
+          "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "xml-file-fix",
+          "caseId": "xml-file",
+          "prompt": "ما المعالجة الأنسب لحالة «قراءة ملف عبر كيان خارجي»؟",
+          "options": [
+            "عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+            "عطّل DTD والكيانات الخارجية قبل التحليل."
+          ],
+          "answer": 2,
+          "explanation": "عطّل DTD والكيانات الخارجية قبل التحليل."
+        },
+        {
+          "id": "xml-internal-fix",
+          "caseId": "xml-internal",
+          "prompt": "ما المعالجة الأنسب لحالة «XXE يصل لمورد داخلي»؟",
+          "options": [
+            "عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد.",
+            "عطّل DTD والكيانات الخارجية قبل التحليل.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق."
+          ],
+          "answer": 2,
+          "explanation": "امنع حل الموارد الخارجية من مدخل XML غير موثوق."
+        },
+        {
+          "id": "xml-dtd-fix",
+          "caseId": "xml-dtd",
+          "prompt": "ما المعالجة الأنسب لحالة «تحميل DTD خارجي»؟",
+          "options": [
+            "عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+            "عطّل DTD والكيانات الخارجية قبل التحليل."
+          ],
+          "answer": 0,
+          "explanation": "عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد."
+        },
+        {
+          "id": "xml-parameter-fix",
+          "caseId": "xml-parameter",
+          "prompt": "ما المعالجة الأنسب لحالة «Parameter Entity تستورد تعريفاً»؟",
+          "options": [
+            "عطّل parameter entities وDTD بدلاً من حجب اسم كيان واحد.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+            "عطّل DTD والكيانات الخارجية قبل التحليل."
+          ],
+          "answer": 0,
+          "explanation": "عطّل parameter entities وDTD بدلاً من حجب اسم كيان واحد."
+        },
+        {
+          "id": "xml-blind-fix",
+          "caseId": "xml-blind",
+          "prompt": "ما المعالجة الأنسب لحالة «حل كيان دون إرجاع المحتوى»؟",
+          "options": [
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+            "امنع الحل الخارجي ولا تعتمد على عدم ظهور النص كحماية.",
+            "عطّل DTD والكيانات الخارجية قبل التحليل."
+          ],
+          "answer": 1,
+          "explanation": "امنع الحل الخارجي ولا تعتمد على عدم ظهور النص كحماية."
+        },
+        {
+          "id": "xml-error-fix",
+          "caseId": "xml-error",
+          "prompt": "ما المعالجة الأنسب لحالة «تسريب محتوى عبر تشخيص خطأ»؟",
+          "options": [
+            "عطّل الكيانات وارجع خطأ عاماً دون محتوى موسّع.",
+            "عطّل DTD والكيانات الخارجية قبل التحليل.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق."
+          ],
+          "answer": 0,
+          "explanation": "عطّل الكيانات وارجع خطأ عاماً دون محتوى موسّع."
+        },
+        {
+          "id": "xml-xinclude-fix",
+          "caseId": "xml-xinclude",
+          "prompt": "ما المعالجة الأنسب لحالة «قراءة مورد عبر XInclude»؟",
+          "options": [
+            "عطّل DTD والكيانات الخارجية قبل التحليل.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+            "عطّل XInclude صراحة في مسار معالجة المدخلات."
+          ],
+          "answer": 2,
+          "explanation": "عطّل XInclude صراحة في مسار معالجة المدخلات."
+        },
+        {
+          "id": "xml-svg-fix",
+          "caseId": "xml-svg",
+          "prompt": "ما المعالجة الأنسب لحالة «كيان خارجي داخل SVG»؟",
+          "options": [
+            "عطّل DTD والكيانات الخارجية قبل التحليل.",
+            "استخدم سياسة XML آمنة عند تحليل SVG؛ الامتداد لا يكفي.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق."
+          ],
+          "answer": 1,
+          "explanation": "استخدم سياسة XML آمنة عند تحليل SVG؛ الامتداد لا يكفي."
+        },
+        {
+          "id": "xml-docx-fix",
+          "caseId": "xml-docx",
+          "prompt": "ما المعالجة الأنسب لحالة «كيان داخل XML مستند مضغوط»؟",
+          "options": [
+            "عطّل DTD والكيانات الخارجية قبل التحليل.",
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+            "طبّق سياسة XML الآمنة داخل ملفات الحاوية أيضاً."
+          ],
+          "answer": 2,
+          "explanation": "طبّق سياسة XML الآمنة داخل ملفات الحاوية أيضاً."
+        },
+        {
+          "id": "xml-expansion-fix",
+          "caseId": "xml-expansion",
+          "prompt": "ما المعالجة الأنسب لحالة «توسع كيانات يتجاوز ميزانية المعالجة»؟",
+          "options": [
+            "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+            "عطّل DTD والكيانات الخارجية قبل التحليل.",
+            "عطّل DTD غير الضروري وافرض ميزانيات حجم وعمق وزمن."
+          ],
+          "answer": 2,
+          "explanation": "عطّل DTD غير الضروري وافرض ميزانيات حجم وعمق وزمن."
+        }
+      ]
     }
   ]
 }

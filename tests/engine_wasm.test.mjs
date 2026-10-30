@@ -4,10 +4,10 @@ import {readFile} from 'node:fs/promises';
 import {loadPyodide} from 'pyodide';
 const py=await loadPyodide();
 py.FS.mkdirTree('/academy');
-for(const name of ['academy.py','academy_http.py','commerce.py','request_security.py','resource_labs.py','academy_catalog.json','resource_catalog.json','advanced_labs.py','advanced_catalog.json','wasm_api.py'])py.FS.writeFile('/academy/'+name,await readFile(new URL('../web/engine/'+name,import.meta.url),'utf8'));
+for(const name of ['academy.py','academy_http.py','commerce.py','request_security.py','resource_labs.py','academy_catalog.json','resource_catalog.json','advanced_labs.py','extended_labs.py','advanced_catalog.json','extended_catalog.json','wasm_api.py'])py.FS.writeFile('/academy/'+name,await readFile(new URL('../web/engine/'+name,import.meta.url),'utf8'));
 py.runPython("import sys; sys.path.insert(0,'/academy'); import json; from wasm_api import invoke; from academy import Academy,CATALOG");
 const invoke=request=>{py.globals.set('_request',JSON.stringify(request));return JSON.parse(py.runPython('invoke(_request)'));};
-test('original invariants hold across every one of the 96 non-XSS cases in the browser Python runtime',()=>{
+test('original invariants hold across every one of the 146 non-XSS cases in the browser Python runtime',()=>{
  const result=JSON.parse(py.runPython(`
 results=[]
 for case in CATALOG:
@@ -20,7 +20,7 @@ for case in CATALOG:
  results.append({'id':id,'control':control['legitimate'],'impact':weak['impact'],'protected':fixed['protected'],'flag':bool(fixed['flag'])})
 json.dumps(results)
 `));
- assert.equal(result.length,96);
+ assert.equal(result.length,146);
  for(const row of result){assert.equal(row.control,true,row.id+' control');assert.equal(row.impact,true,row.id+' impact');assert.equal(row.protected,true,row.id+' protection');assert.equal(row.flag,true,row.id+' evidence');}
 });
 test('transport preserves business responses, matching evidence, and persistent readback',()=>{
@@ -107,7 +107,7 @@ test('MFA requires an explicit completed second factor across the entire session
  // The ordinary logout lesson can still accept an active, non-revoked session.
  assert.equal(invoke({path:'/academy/api/authentication/authentication-logout/fixed',method:'POST',input:{session:'session-active'}}).status,200);
 });
-test('all 108 case routes reject or handle altered field types without uncaught errors or fixed impact',()=>{
+test('all 158 case routes reject or handle altered field types without uncaught errors or fixed impact',()=>{
  const report=JSON.parse(py.runPython(`
 from copy import deepcopy
 rows=[]
@@ -127,8 +127,8 @@ for c in CATALOG:
  rows.append({'id':c['id'],'requests':count})
 json.dumps(rows)
 `));
- assert.equal(report.length,108);
- assert.equal(report.reduce((n,r)=>n+r.requests,0),4176);
+ assert.equal(report.length,158);
+ assert.equal(report.reduce((n,r)=>n+r.requests,0),JSON.parse(py.runPython('json.dumps(sum(len(c["normal"])*24 for c in CATALOG))')));
 });
 test('redirect parsing accepts learner-created destinations and each weak rule differs from fixed and from the other weak rules',()=>{
  const samples={ 'code-redirect':'https://attacker.test/new-page', 'redirect-relative':'//attacker.test/new-page', 'redirect-backslash':'/\\attacker.test/new-page', 'redirect-encoded':'%2f%2fattacker.test%2fnew-page', 'redirect-suffix':'https://app.lab.attacker.test/new-page', 'redirect-nested':'/continue?next=https%3A%2F%2Fattacker.test%2Fnew-page' };
@@ -158,7 +158,7 @@ test('CORS preflight blocks the actual request and declares credentialed permiss
  assert.equal(anonymous.preflight.status,204);assert.equal(anonymous.http_status_of_fixture_get,401);assert.equal(anonymous.private,null);
 });
 
-test('all 108 cases enforce explicit HTTP contracts, reject malformed requests and correlate evidence',()=>{
+test('all 158 cases enforce explicit HTTP contracts, reject malformed requests and correlate evidence',()=>{
  const cases=JSON.parse(py.runPython('json.dumps(CATALOG)'));
  const fixedStatuses={payment:{'pay-price':422,'pay-quantity':422,'pay-discount':422,'pay-coupon-reuse':207,'pay-currency':409,'pay-rounding':422,'pay-total':422,'pay-shipping':422,'pay-tax':422,'pay-status':409,'pay-webhook':401,'pay-binding':409,'pay-replay':200,'pay-refund':409,'pay-gift':207,'pay-trial':409},code:{'code-sqli':200,'code-template':200,'code-nosql':422,'code-ssrf':403,'code-redirect':403},csrf:{'csrf-get':405,'csrf-content-type':415},upload:{'upload-path':403,'upload-overwrite':403},disclosure:{'disclosure-apikey':200},authentication:{'authentication-mfa':403}};
  const defaults={access:403,rate:429,xss:200,ssrf:403,redirect:403,csrf:403,cors:200,upload:415,traversal:403,disclosure:404,authentication:401,jwt:401,assignment:403};
@@ -172,7 +172,7 @@ test('all 108 cases enforce explicit HTTP contracts, reject malformed requests a
   if(row.group==='rate')for(const mode of ['vulnerable','fixed'])call(row,mode,row.normal);
   for(const mode of ['vulnerable','fixed']){
    const r=call(row,mode,row.attack),e=invoke({path:`/academy/evidence?case=${row.id}&mode=${mode}`}).body;
-   const expected=mode==='vulnerable'?(row.group==='rate'?(row.id==='rate-ip-pool'?429:401):row.group==='upload'||row.id==='xss-stored'?201:200):(row.id==='xss-stored'?201:fixedStatuses[row.group]?.[row.id]??defaults[row.group]);
+   const expected=row.expected_http?.[mode]??(mode==='vulnerable'?(row.group==='rate'?(row.id==='rate-ip-pool'?429:401):row.group==='upload'||row.id==='xss-stored'?201:200):(row.id==='xss-stored'?201:fixedStatuses[row.group]?.[row.id]??defaults[row.group]));
    assert.notEqual(expected,undefined,row.id+' has a deliberate HTTP contract');assert.equal(r.status,expected,row.id+' '+mode);assert.equal(e.status,r.status,row.id+' evidence uses actual operation status');assert.equal(e.request_id,r.headers['X-Request-ID']);assert.equal(e.request_id,r.body.request_id);
    if(row.group!=='xss')assert.equal(mode==='fixed'?e.protected:e.impact,true,row.id+' actual effect');
    if(r.status>=400)assert.ok(r.body.error?.code,row.id+' structured rejection');
