@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {loadPyodide} from 'pyodide';
 const read=n=>readFile(new URL('../web/'+n,import.meta.url),'utf8');
 const py=await loadPyodide();py.FS.mkdirTree('/academy');
-for(const n of ['academy.py','academy_http.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','academy_catalog.json','resource_catalog.json','advanced_catalog.json','wasm_api.py','challenges.py'])py.FS.writeFile('/academy/'+n,await read('engine/'+n));
+for(const n of ['academy.py','academy_http.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','extended_labs.py','academy_catalog.json','resource_catalog.json','advanced_catalog.json','extended_catalog.json','wasm_api.py','challenges.py'])py.FS.writeFile('/academy/'+n,await read('engine/'+n));
 py.runPython("import sys;sys.path.insert(0,'/academy');from wasm_api import invoke");
 function invoke(request){py.globals.set('_challenge',JSON.stringify(request));return JSON.parse(py.runPython('invoke(_challenge)'));}
 const catalog=invoke({path:'/academy/challenges'}).body.challenges;

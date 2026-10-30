@@ -35,7 +35,7 @@ async function stats(r,e){const {since,days}=range(new URL(r.url));const all=asy
  const counts=await e.DB.prepare("SELECT COUNT(DISTINCT session_id) AS sessions,SUM(kind='view') AS views,SUM(kind='attempt') AS attempts,SUM(kind='complete') AS completions,COALESCE(SUM(active_seconds),0) AS active_seconds FROM events WHERE received_at>=?").bind(since).first();
  const [daily,cases,devices,referrers,hours,countries]=await Promise.all([
  all("SELECT strftime('%Y-%m-%d',received_at,'unixepoch') AS day,COUNT(DISTINCT session_id) AS sessions,SUM(kind='view') AS views,SUM(active_seconds) AS active_seconds FROM events WHERE received_at>=? GROUP BY day ORDER BY day",since),
- all("SELECT case_id,SUM(kind='view') AS views,SUM(kind='attempt') AS attempts,SUM(kind='complete') AS completions,SUM(active_seconds) AS active_seconds FROM events WHERE received_at>=? AND case_id!='' GROUP BY case_id ORDER BY views DESC LIMIT 108",since),
+ all("SELECT case_id,SUM(kind='view') AS views,SUM(kind='attempt') AS attempts,SUM(kind='complete') AS completions,SUM(active_seconds) AS active_seconds FROM events WHERE received_at>=? AND case_id!='' GROUP BY case_id ORDER BY views DESC LIMIT "+Object.keys(CASES).length,since),
  all("SELECT device,COUNT(*) AS count FROM sessions WHERE last_seen>=? GROUP BY device",since),
  all("SELECT referrer,COUNT(*) AS count FROM sessions WHERE last_seen>=? GROUP BY referrer ORDER BY count DESC LIMIT 20",since),
  all("SELECT strftime('%H',received_at,'unixepoch','+3 hours') AS hour,COUNT(*) AS views FROM events WHERE received_at>=? AND kind='view' GROUP BY hour ORDER BY hour",since),

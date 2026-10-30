@@ -82,7 +82,7 @@ def invoke(raw):
 def dispatch_traced(request):
  import sys,os,linecache
  events=[];truncated=False;repeated_events={}
- allowed={'challenges.py','academy.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','academy_http.py'}
+ allowed={'challenges.py','academy.py','commerce.py','request_security.py','resource_labs.py','advanced_labs.py','extended_labs.py','academy_http.py'}
  def observe(frame,event,arg):
   nonlocal truncated
   filename=os.path.basename(frame.f_code.co_filename)

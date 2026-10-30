@@ -11,7 +11,7 @@ window.BBSiteLanguage=(()=>{
   "لمن هذه الأكاديمية؟": "Who is this academy for?",
   "للمبتدئ الذي يريد فهم الطلب والاستجابة، وللباحث الذي يريد التدرّب على إثبات الأثر وكتابة استنتاج واضح. جميع الحالات العملية مفتوحة دون حساب.": "For beginners learning requests and responses, and researchers practicing evidence collection and clear conclusions. All practical cases are open without an account.",
   "ما الذي ستتدرّب عليه؟": "What will you practice?",
-  "15 مختبراً و108 حالات: الصلاحيات، XSS، منطق الدفع، رفع الملفات، المسارات، المصادقة، JWT، حقول API، وسياسات الطلبات وغيرها.": "15 labs and 108 cases: authorization, XSS, payment logic, uploads, paths, authentication, JWTs, API fields, request policies and more.",
+  "20 مختبراً و158 حالة: الصلاحيات، XSS، منطق الدفع، رفع الملفات، المسارات، المصادقة، JWT، حقول API، وسياسات الطلبات وغيرها.": "20 labs and 158 cases: authorization, XSS, payment logic, uploads, paths, authentication, JWTs, API fields, request policies and more.",
   "كيف تستخدم المختبر؟": "How do you use a lab?",
   "افتح التطبيق الحي وجرّب العملية السليمة.": "Open the application and try a legitimate operation.",
   "افتح «اعتراض الطلب» وعدّل ما يرسله التطبيق.": "Open Intercept and edit the data sent by the application.",
