@@ -1,6 +1,7 @@
 'use strict';
 window.BBSiteLanguage=(()=>{
  const dictionary={
+  ...window.BBLiveLanguage,
   "عن الأكاديمية · Between Bytes": "About the academy · Between Bytes",
   "المختبرات": "Labs",
   "مسار التعلّم": "Learning path",
@@ -100,6 +101,13 @@ window.BBSiteLanguage=(()=>{
   "بدون إحصاءات": "Without analytics",
   "التفاصيل وتغيير الاختيار": "Details and preferences",
   "بتسمح بإحصاءات اختيارية عن الزيارات وتفاعل المختبرات والوقت النشط؟ ما منرسل الأكواد أو قيم طلباتك، والمختبرات بتشتغل بدونها.": "Allow optional analytics about visits, lab interaction and active time? We do not send code or request values. Labs work without analytics.",
+  "خدمة الحسابات غير متاحة حالياً. يمكنك متابعة المختبرات كضيف.": "Accounts are unavailable. You can continue the labs as a guest.",
+  "تعذّر قراءة استجابة الخدمة.": "Could not read the service response.",
+  "تم تسجيل الخروج. يمكنك متابعة التعلّم كضيف.": "Signed out. You can continue learning as a guest.",
+  "تعذّر إنهاء جلسة السيرفر؛ أعد المحاولة.": "Could not end the server session; retry.",
+  "تعذر تشغيل محرك المختبر. تحقق من اكتمال التحميل أو تحديث Android System WebView.": "Could not start the lab engine. Check that the download completed or update Android System WebView.",
+  "تعذر تجهيز التجربة. تحقق من الاتصال ثم أعد المحاولة.": "Could not prepare the engine. Check your connection and retry.",
+  "انتهت مهلة تشغيل المحرك.": "The engine request timed out.",
   "تجهيز التجربة لأول تشغيل…": "Preparing the engine for the first run…",
   "أعد إرسال الطلب للمحاولة من جديد.": "Resend the request to retry.",
   "إغلاق ×": "Close ×",
@@ -135,7 +143,9 @@ window.BBSiteLanguage=(()=>{
   "الإحصاءات متوقفة. يمكنك التعلم دون تفعيلها.": "Analytics is disabled. You can learn without enabling it."
 };
  const reverse=new Map(Object.entries(dictionary).map(([a,b])=>[b,a]));let language='ar';try{language=new URLSearchParams(location.search).get('lang')||localStorage.getItem('bb-language')||'ar';}catch{}language=language==='en'?'en':'ar';
- const translate=text=>{const trim=text.trim();if(language==='en'){if(dictionary[trim])return text.replace(trim,dictionary[trim]);const prefix='وصلتنا ملاحظتك ✓ رقم المتابعة: ';if(text.startsWith(prefix))return dictionary[prefix]+text.slice(prefix.length);}else if(reverse.has(trim))return text.replace(trim,reverse.get(trim));return text;};
+ const livePairs=Object.entries(window.BBLiveLanguage||{}).sort((a,b)=>b[0].length-a[0].length),liveReverse=livePairs.map(([ar,en])=>[en,ar]).sort((a,b)=>b[0].length-a[0].length);
+ const translateLive=text=>{for(const [from,to]of language==='en'?livePairs:liveReverse)if(text.includes(from))text=text.replaceAll(from,to);return text;};
+ const translate=text=>{const trim=text.trim();if(language==='en'){if(dictionary[trim])return text.replace(trim,dictionary[trim]);const prefix='وصلتنا ملاحظتك ✓ رقم المتابعة: ';if(text.startsWith(prefix))return dictionary[prefix]+text.slice(prefix.length);}else if(reverse.has(trim))return text.replace(trim,reverse.get(trim));return livePairs.length?translateLive(text):text;};
  let observer;function apply(value=language){if(!document?.body)return;language=value==='en'?'en':'ar';try{localStorage.setItem('bb-language',language);}catch{}observer?.disconnect();document.documentElement.lang=language;document.documentElement.dir=language==='ar'?'rtl':'ltr';const walker=document.createTreeWalker(document,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const n=walker.currentNode;if(n.parentElement?.closest('script,style,textarea,pre,code'))continue;const text=translate(n.textContent);if(text!==n.textContent)n.textContent=text;}for(const el of document.querySelectorAll('[placeholder],[aria-label]'))for(const attr of ['placeholder','aria-label']){const old=el.getAttribute(attr);if(old){const text=translate(old);if(text!==old)el.setAttribute(attr,text);}}const button=document.getElementById('site-language');if(button)button.textContent=language==='ar'?'English':'العربية';observer?.observe(document.body,{subtree:true,childList:true,characterData:true});}
  if(!document.getElementById('language')&&!document.getElementById('access-language')){const button=document.createElement('button');button.id='site-language';button.type='button';button.onclick=()=>apply(language==='ar'?'en':'ar');(document.querySelector('header>div')||document.querySelector('header')||document.querySelector('main')).append(button);}
  observer=new MutationObserver(()=>apply());apply();return {apply,get language(){return language;},text:translate};
