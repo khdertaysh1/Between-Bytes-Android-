@@ -20,3 +20,19 @@ test('a rejected order replaces the previous successful response with its own HT
  const response=JSON.parse(a.d.getElementById('live-response').textContent);assert.equal(response.status,400);assert.ok(response.response.error);assert.equal(response.request.unit_minor,-1);assert.equal(response.response.order,undefined);
  }finally{a.w.close();}
 });
+
+test('server lab translates store, interception, receipts and errors in both directions without resending or editing request data',async()=>{
+ const a=await ui();const {d,w}=a;
+ const settled=()=>new Promise(r=>setTimeout(r,0));
+ const assertEnglish=()=>{const walker=d.createTreeWalker(d.body,4),remaining=[];while(walker.nextNode()){const n=walker.currentNode;if(!n.parentElement.closest('script,style,pre,code,textarea,#site-language')&&/[\u0600-\u06ff]/.test(n.textContent))remaining.push(n.textContent);}assert.deepEqual(remaining,[]);};
+ try{
+  w.eval(await read('live-language.js'));w.eval(await read('site-language.js'));w.BBSiteLanguage.apply('en');assertEnglish();assert.equal(d.documentElement.dir,'ltr');
+  a.clickText('View course details');await until(()=>d.getElementById('live-page').textContent.includes('Add to cart'));a.clickText('Add to cart');await until(()=>d.getElementById('store-place-order'));await settled();assertEnglish();
+  d.getElementById('live-intercept').checked=true;a.clickText('Confirm order creation');await until(()=>!d.getElementById('live-send').disabled);await settled();assertEnglish();
+  const body=JSON.parse(d.getElementById('live-request').value);body.unit_minor=1;d.getElementById('live-request').value=JSON.stringify(body);const original=d.getElementById('live-request').value,posts=a.calls.filter(c=>c.method==='POST').length;
+  d.getElementById('site-language').click();assert.equal(d.documentElement.dir,'rtl');assert.match(d.getElementById('live-guide').textContent,/كيف تعمل الميزة/);assert.equal(d.getElementById('live-request').value,original);assert.equal(a.calls.filter(c=>c.method==='POST').length,posts);
+  d.getElementById('site-language').click();d.getElementById('live-send').click();await until(()=>d.getElementById('server-receipt')?.dataset.total==='1'&&!d.getElementById('live-mode').disabled);await settled();assertEnglish();assert.match(d.getElementById('server-receipt').textContent,/Saved unit price/);assert.equal(JSON.parse(d.getElementById('live-request').value).unit_minor,1);
+  // Translation never changes machine-readable response data.
+  assert.ok(JSON.parse(d.getElementById('live-response').textContent).order);
+ }finally{w.close();}
+});

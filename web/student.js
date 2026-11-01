@@ -1,6 +1,6 @@
 'use strict';
 window.BBStudent=(()=>{
- const VERSION='0.16.0',MAX=1048576,$=id=>document.getElementById(id);
+ const VERSION='0.22.0',MAX=1048576,$=id=>document.getElementById(id);
  const copy=(lang,ar,en)=>lang==='en'?en:ar;
  const node=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
  let bridge,rows=[],language='ar',pending=null;

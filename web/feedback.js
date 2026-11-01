@@ -2,7 +2,7 @@
 (()=>{
  const $=id=>document.getElementById(id),client=window.BBServiceClient;
  const selected=new URLSearchParams(location.search).get('case')||'';$('feedback-case').value=selected.replace(/[^a-zA-Z0-9_-]/g,'').slice(0,80);
- const version=(new URLSearchParams(location.search).get('version')||'0.14.0').replace(/[^0-9.]/g,'').slice(0,20);
+ const version=(new URLSearchParams(location.search).get('version')||'0.22.0').replace(/[^0-9.]/g,'').slice(0,20);
  $('feedback-context').textContent='Web '+version+' · Case: '+($('feedback-case').value||'General');
  let submission=null,sending=false;
  const content=()=>({kind:$('feedback-kind').value,title:$('feedback-title').value.trim(),message:$('feedback-message').value.trim(),case_id:$('feedback-case').value.trim(),email:$('feedback-email').value.trim(),website:$('feedback-website').value});

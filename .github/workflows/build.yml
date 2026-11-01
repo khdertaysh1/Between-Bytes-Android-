@@ -26,9 +26,9 @@ jobs:
       - name: Verify direct feedback, admin authentication and analytics
         run: npm run test:services && npm run test:navigation
       - name: Build shared content
-        run: python tools/build_advanced_content.py && python tools/build_content.py
+        run: python tools/build_advanced_content.py && python tools/build_extended_content.py && python tools/build_content.py
       - name: Check generated content is committed
-        run: git diff --exit-code web/engine/advanced_catalog.json shared/catalog.json web/catalog.json app/src/main/assets/catalog.json
+        run: git diff --exit-code web/engine/extended_catalog.json services/academy-api/cases.js web/engine/advanced_catalog.json shared/catalog.json web/catalog.json app/src/main/assets/catalog.json
       - name: Test account isolation, progression and offline replay
         run: python -m unittest discover -s tests -v
       - name: Check browser scripts

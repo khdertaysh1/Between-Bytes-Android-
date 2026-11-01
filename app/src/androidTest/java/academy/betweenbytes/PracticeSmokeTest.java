@@ -29,7 +29,7 @@ public class PracticeSmokeTest {
         Intent intent=new Intent(instrumentation.getTargetContext(),PracticeActivity.class);intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         activity=(PracticeActivity)instrumentation.startActivitySync(intent);
         try{
-            await("Boolean(window.BBEngine && document.getElementById('cards')?.children.length===15)",20000);
+            await("Boolean(window.BBEngine && document.getElementById('cards')?.children.length===20)",20000);
             js("(async()=>{try{const run=async(mode,price)=>{const r=await BBEngine.fetch('/academy/api/payment/pay-price/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({price})});return {status:r.status,body:await r.json()};};const weak=await run('vulnerable',1);const fixed=await run('fixed',1);const control=await run('fixed',10000);window.__bbSmoke={done:true,weak:weak.status,fixed:fixed.status,control:control.status,amount:weak.body.data.order.totals.amount_due};}catch(e){window.__bbSmoke={done:true,error:String(e)};}})();");
             await("Boolean(window.__bbSmoke?.done)",60000);
             String value=new JSONTokener(js("JSON.stringify(window.__bbSmoke)")).nextValue().toString();JSONObject result=new JSONObject(value);
@@ -39,6 +39,10 @@ public class PracticeSmokeTest {
             await("Boolean(window.__bbAdvanced?.done)",20000);
             JSONObject advanced=new JSONObject(new JSONTokener(js("JSON.stringify(window.__bbAdvanced)")).nextValue().toString());
             assertFalse(advanced.toString(),advanced.has("error"));assertEquals(12,advanced.getInt("count"));
+            js("(async()=>{try{const rows=await (await window.fetch('engine/extended_catalog.json')).json();let count=0;for(const row of rows){await BBEngine.fetch('/academy/reset',{method:'POST',body:JSON.stringify({case:row.id})});const run=async(mode,input)=>{const r=await BBEngine.fetch('/academy/api/'+row.group+'/'+row.id+'/'+mode,{method:'POST',body:JSON.stringify(input)});return r.status;};if(await run('fixed',row.normal)!==200||await run('vulnerable',row.attack)!==row.expected_http.vulnerable||await run('fixed',row.attack)!==row.expected_http.fixed)throw Error(row.id+' HTTP mismatch');count++;}window.__bbExtended={done:true,count};}catch(e){window.__bbExtended={done:true,error:String(e)};}})();");
+            await("Boolean(window.__bbExtended?.done)",60000);
+            JSONObject extended=new JSONObject(new JSONTokener(js("JSON.stringify(window.__bbExtended)")).nextValue().toString());
+            assertFalse(extended.toString(),extended.has("error"));assertEquals(50,extended.getInt("count"));
             js("(async()=>{try{await BBEngine.fetch('/academy/api/xss/xss-html/vulnerable',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:'<img src=x onerror=alert(1)>'})});const evidence=await (await BBEngine.fetch('/academy/evidence?case=xss-html&mode=vulnerable')).json();const frame=document.getElementById('preview');window.addEventListener('message',e=>{if(e.source===frame.contentWindow&&e.data?.token===evidence.token&&e.data.type==='academy-executed')window.__bbXssObserved=true;});frame.srcdoc=await BBEngine.preview(evidence.token);frame.hidden=false;}catch(e){window.__bbXssError=String(e);}})();");
             await("window.__bbXssObserved===true",15000);
         }finally{instrumentation.runOnMainSync(()->activity.finish());}
